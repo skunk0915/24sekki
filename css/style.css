@@ -1,0 +1,69 @@
+body {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Yu Gothic', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+}
+.overlay {
+    background: rgba(255,255,255,0.8);
+    padding: 2em;
+    margin: 3em auto;
+    max-width: 700px;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+    position: relative;
+    z-index: 2;
+}
+.kou-list {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.kou-list ul {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1em 2em;
+    max-height: 60vh;
+    overflow-y: auto;
+    list-style: none;
+}
+.kou-list li {
+    margin: 0.5em 0;
+}
+.kou-list a {
+    color: #006666;
+    text-decoration: none;
+    font-weight: bold;
+}
+.kou-list.hidden {
+    display: none;
+}
+#menuBtn, #closeMenu, .back {
+    background: #006666;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5em 1.5em;
+    margin: 1em 0;
+    font-size: 1em;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+.back {
+    position: absolute;
+    top: 1em;
+    left: 1em;
+}
+.kou-range {
+    margin-top: 2em;
+    font-size: 1.1em;
+    color: #333;
+}
