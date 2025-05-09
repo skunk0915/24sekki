@@ -88,6 +88,7 @@ body {
 .title-container {
     margin-left: 2rem;
     align-items: center;
+    text-shadow: 0 0 5px black;
 }
 
 .main-title {
@@ -107,6 +108,7 @@ body {
     line-height: 2;
     letter-spacing: 0.05em;
     white-space: pre-line;
+    text-shadow: 0 0 5px black;
 }
 
 .date {
