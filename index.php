@@ -173,9 +173,6 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     <!-- コンテンツ -->
     <div class="content">
         <div class="vertical-text">
-            <?php if (isset($_GET['idx'])): ?>
-            <a href="index.php" class="back">← トップへ戻る</a>
-            <?php endif; ?>
             <div class="title-container">
                 <h2 class="sub-title"><?php echo htmlspecialchars($display_kou['読み']); ?></h2>
                 <h1 class="main-title"><?php echo htmlspecialchars($display_kou['和名']); ?></h1>
@@ -184,33 +181,10 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
             <div class="date">
                 <p><?php echo htmlspecialchars($display_kou['開始年月日']); ?>～<?php echo htmlspecialchars($display_kou['終了年月日']); ?></p>
             </div>
-            <button id="menuBtn">暦一覧</button>
+            <a href="calendar.php" class="calendar-button">暦カレンダーを見る</a>
         </div>
     </div>
-    <div id="kouList" class="kou-list hidden">
-        <div class="calendar-tabs">
-            <button class="tab-button active" data-tab="kou-tab">七十二候</button>
-            <button class="tab-button" data-tab="sekki-tab">二十四節気</button>
-        </div>
-        <div class="tab-content active" id="kou-tab">
-            <ul>
-            <?php foreach ($kou_list as $i => $kou): ?>
-                <li><a href="index.php?type=kou&idx=<?php echo $i; ?>"><?php echo htmlspecialchars($kou['候名']); ?>（<?php echo htmlspecialchars($kou['和名']); ?>）</a></li>
-            <?php endforeach; ?>
-            </ul>
-        </div>
-        <div class="tab-content" id="sekki-tab">
-            <ul>
-            <?php foreach ($sekki_list as $i => $sekki): ?>
-                <li><a href="index.php?type=sekki&idx=<?php echo $i; ?>"><?php echo htmlspecialchars($sekki['節気名']); ?>（<?php echo htmlspecialchars($sekki['読み']); ?>）</a></li>
-            <?php endforeach; ?>
-            </ul>
-        </div>
-        <div class="menu-footer">
-            <a href="calendar.php" class="calendar-link">暦カレンダーを見る</a>
-            <button id="closeMenu">閉じる</button>
-        </div>
-    </div>
+
     <script src="js/scripts.js"></script>
 </body>
 </html>

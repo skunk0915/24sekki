@@ -195,7 +195,7 @@ body {
 .vertical-text::-webkit-scrollbar-track {
     background-color: rgba(0, 0, 0, 0.1);
 }
-#menuBtn, #closeMenu, .back {
+#menuBtn, #closeMenu, .back, .calendar-button {
     background: rgba(255, 255, 255, 0.2);
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.5);
@@ -209,7 +209,7 @@ body {
     transition: background 0.3s;
 }
 
-#menuBtn:hover, #closeMenu:hover, .back:hover {
+#menuBtn:hover, #closeMenu:hover, .back:hover, .calendar-button:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
