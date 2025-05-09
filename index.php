@@ -16,6 +16,23 @@ function load_kou_data($csv_file) {
     return $kou_list;
 }
 
+// 24sekki.csvを読み込む
+function load_sekki_data($csv_file) {
+    $sekki_list = array();
+    if (($handle = fopen($csv_file, "r")) !== FALSE) {
+        $header = fgetcsv($handle);
+        while (($row = fgetcsv($handle)) !== FALSE) {
+            $sekki = array();
+            foreach ($header as $i => $col) {
+                $sekki[$col] = isset($row[$i]) ? $row[$i] : '';
+            }
+            $sekki_list[] = $sekki;
+        }
+        fclose($handle);
+    }
+    return $sekki_list;
+}
+
 function get_today_kou($kou_list) {
     // 月と日を別々に取得して数値比較を行う
     $month = (int)date('n');
@@ -62,16 +79,78 @@ function get_today_kou($kou_list) {
     return $kou_list[0];
 }
 
-$kou_list = load_kou_data('72kou.csv');
+// 今日の日付に該当する節気を取得
+function get_today_sekki($sekki_list) {
+    // 月と日を別々に取得して数値比較を行う
+    $month = (int)date('n');
+    $day = (int)date('j');
+    
+    foreach ($sekki_list as $sekki) {
+        // 開始日と終了日を分解
+        list($start_month, $start_day) = explode('/', $sekki['開始年月日']);
+        list($end_month, $end_day) = explode('/', $sekki['終了年月日']);
+        
+        // 数値として比較
+        $start_month = (int)$start_month;
+        $start_day = (int)$start_day;
+        $end_month = (int)$end_month;
+        $end_day = (int)$end_day;
+        
+        // 月が同じ場合は日だけで比較
+        if ($month == $start_month && $month == $end_month) {
+            if ($day >= $start_day && $day <= $end_day) {
+                return $sekki;
+            }
+        }
+        // 開始月と終了月が異なる場合
+        elseif ($start_month != $end_month) {
+            // 現在の月が開始月で、日が開始日以上
+            if ($month == $start_month && $day >= $start_day) {
+                return $sekki;
+            }
+            // 現在の月が終了月で、日が終了日以下
+            elseif ($month == $end_month && $day <= $end_day) {
+                return $sekki;
+            }
+            // 現在の月が開始月と終了月の間
+            elseif ($month > $start_month && $month < $end_month) {
+                return $sekki;
+            }
+        }
+    }
+    
+    // 範囲外の場合は最初の節気を返す
+    return $sekki_list[0];
+}
 
-// GETパラメータでidxが指定されていれば、その候を表示
-// 指定がなければ今日の候を表示
-if (isset($_GET['idx'])) {
+$kou_list = load_kou_data('72kou.csv');
+$sekki_list = load_sekki_data('24sekki.csv');
+
+// GETパラメータでタイプとidxが指定されていれば、その候または節気を表示
+// 指定がなければ今日の候を優先表示
+if (isset($_GET['type']) && isset($_GET['idx'])) {
+    $idx = intval($_GET['idx']);
+    if ($_GET['type'] === 'sekki') {
+        if ($idx < 0 || $idx >= count($sekki_list)) $idx = 0;
+        $display_kou = $sekki_list[$idx];
+        // 節気データを候データの形式に合わせる
+        $display_kou['候名'] = $display_kou['節気名'];
+        $display_kou['和名'] = $display_kou['節気名'];
+    } else {
+        if ($idx < 0 || $idx >= count($kou_list)) $idx = 0;
+        $display_kou = $kou_list[$idx];
+    }
+} else if (isset($_GET['idx'])) {
     $idx = intval($_GET['idx']);
     if ($idx < 0 || $idx >= count($kou_list)) $idx = 0;
     $display_kou = $kou_list[$idx];
 } else {
-    $display_kou = get_today_kou($kou_list);
+    // 今日の候と節気を取得
+    $today_kou = get_today_kou($kou_list);
+    $today_sekki = get_today_sekki($sekki_list);
+    
+    // 七十二候を優先する
+    $display_kou = $today_kou;
 }
 ?>
 <!DOCTYPE html>
@@ -79,7 +158,7 @@ if (isset($_GET['idx'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($_GET['idx']) ? htmlspecialchars($display_kou['和名']) . ' | ' : ''; ?>七十二候 - 日本の季節</title>
+    <title><?php echo isset($_GET['idx']) || isset($_GET['type']) ? htmlspecialchars($display_kou['和名']) . ' | ' : ''; ?>二十四節気・七十二候 - 日本の季節</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
@@ -105,16 +184,32 @@ if (isset($_GET['idx'])) {
             <div class="date">
                 <p><?php echo htmlspecialchars($display_kou['開始年月日']); ?>～<?php echo htmlspecialchars($display_kou['終了年月日']); ?></p>
             </div>
-            <button id="menuBtn">七十二候一覧</button>
+            <button id="menuBtn">暦一覧</button>
         </div>
     </div>
     <div id="kouList" class="kou-list hidden">
-        <ul>
-        <?php foreach ($kou_list as $i => $kou): ?>
-            <li><a href="index.php?idx=<?php echo $i; ?>"><?php echo htmlspecialchars($kou['候名']); ?>（<?php echo htmlspecialchars($kou['和名']); ?>）</a></li>
-        <?php endforeach; ?>
-        </ul>
-        <button id="closeMenu">閉じる</button>
+        <div class="calendar-tabs">
+            <button class="tab-button active" data-tab="kou-tab">七十二候</button>
+            <button class="tab-button" data-tab="sekki-tab">二十四節気</button>
+        </div>
+        <div class="tab-content active" id="kou-tab">
+            <ul>
+            <?php foreach ($kou_list as $i => $kou): ?>
+                <li><a href="index.php?type=kou&idx=<?php echo $i; ?>"><?php echo htmlspecialchars($kou['候名']); ?>（<?php echo htmlspecialchars($kou['和名']); ?>）</a></li>
+            <?php endforeach; ?>
+            </ul>
+        </div>
+        <div class="tab-content" id="sekki-tab">
+            <ul>
+            <?php foreach ($sekki_list as $i => $sekki): ?>
+                <li><a href="index.php?type=sekki&idx=<?php echo $i; ?>"><?php echo htmlspecialchars($sekki['節気名']); ?>（<?php echo htmlspecialchars($sekki['読み']); ?>）</a></li>
+            <?php endforeach; ?>
+            </ul>
+        </div>
+        <div class="menu-footer">
+            <a href="calendar.php" class="calendar-link">暦カレンダーを見る</a>
+            <button id="closeMenu">閉じる</button>
+        </div>
     </div>
     <script src="js/scripts.js"></script>
 </body>
