@@ -191,3 +191,71 @@ function check_date_in_range($month, $day, $start_date, $end_date) {
     
     return false;
 }
+
+/**
+ * 指定された候の前の候を取得
+ * 
+ * @param array $kou_list 候のリスト
+ * @param int $current_idx 現在の候のインデックス
+ * @return array|null 前の候、なければnull
+ */
+function get_prev_kou($kou_list, $current_idx) {
+    if ($current_idx > 0) {
+        return $kou_list[$current_idx - 1];
+    } elseif (count($kou_list) > 0) {
+        // 最初の候の場合は最後の候を返す（循環）
+        return $kou_list[count($kou_list) - 1];
+    }
+    return null;
+}
+
+/**
+ * 指定された候の次の候を取得
+ * 
+ * @param array $kou_list 候のリスト
+ * @param int $current_idx 現在の候のインデックス
+ * @return array|null 次の候、なければnull
+ */
+function get_next_kou($kou_list, $current_idx) {
+    if ($current_idx < count($kou_list) - 1) {
+        return $kou_list[$current_idx + 1];
+    } elseif (count($kou_list) > 0) {
+        // 最後の候の場合は最初の候を返す（循環）
+        return $kou_list[0];
+    }
+    return null;
+}
+
+/**
+ * 指定された節気の前の節気を取得
+ * 
+ * @param array $sekki_list 節気のリスト
+ * @param int $current_idx 現在の節気のインデックス
+ * @return array|null 前の節気、なければnull
+ */
+function get_prev_sekki($sekki_list, $current_idx) {
+    if ($current_idx > 0) {
+        return $sekki_list[$current_idx - 1];
+    } elseif (count($sekki_list) > 0) {
+        // 最初の節気の場合は最後の節気を返す（循環）
+        return $sekki_list[count($sekki_list) - 1];
+    }
+    return null;
+}
+
+/**
+ * 指定された節気の次の節気を取得
+ * 
+ * @param array $sekki_list 節気のリスト
+ * @param int $current_idx 現在の節気のインデックス
+ * @return array|null 次の節気、なければnull
+ */
+function get_next_sekki($sekki_list, $current_idx) {
+    if ($current_idx < count($sekki_list) - 1) {
+        return $sekki_list[$current_idx + 1];
+    } elseif (count($sekki_list) > 0) {
+        // 最後の節気の場合は最初の節気を返す（循環）
+        return $sekki_list[0];
+    }
+    return null;
+}

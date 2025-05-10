@@ -47,6 +47,10 @@ foreach ($kou_list as $kou) {
 // 現在の月と日を取得
 $current_month = (int)date('n');
 $current_day = (int)date('j');
+
+// index.phpからのパラメータを取得
+$from_type = isset($_GET['from']) ? $_GET['from'] : '';
+$from_idx = isset($_GET['idx']) ? (int)$_GET['idx'] : -1;
 ?>
 <!DOCTYPE html>
 <html lang="ja">
@@ -58,138 +62,17 @@ $current_day = (int)date('j');
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/calendar.css">
     <!-- PWA対応 -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4285f4">
+    <meta name="theme-color" content="transparent">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="暦アプリ">
     <link rel="apple-touch-icon" href="img/favicon/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16.png">
-    <style>
-        body {
-            overflow: auto;
-            background-color: #f5f5f5;
-            color: #333;
-            font-family: 'Noto Serif JP', serif;
-        }
-        
-        .calendar-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2rem;
-        }
-        
-        .season-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 40px;
-        }
-        
-        .season-header {
-            background-color: #f8f8f8;
-            text-align: center;
-            padding: 10px;
-            font-size: 1.5rem;
-            border: 1px solid #ddd;
-        }
-        
-        .spring {
-            background-color: #ffeef1;
-        }
-        
-        .summer {
-            background-color: #e6f9ff;
-        }
-        
-        .autumn {
-            background-color: #fff9e6;
-        }
-        
-        .winter {
-            background-color: #f0f8ff;
-        }
-        
-        .month-row th {
-            background-color: #f0f0f0;
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-            width: 33.33%;
-        }
-        
-        .sekki-row th {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-            background-color: #e8e8e8;
-        }
-        
-        .kou-row td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-            vertical-align: top;
-            height: 100px;
-        }
-        
-        .kou-item {
-            margin-bottom: 5px;
-            padding: 3px;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        
-        .kou-item:hover {
-            background-color: rgba(0, 0, 0, 0.05);
-        }
-        
-        .current {
-            background-color: #ffeb3b;
-            font-weight: bold;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-        }
-        
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            margin-bottom: 20px;
-            text-decoration: none;
-            color: #333;
-            font-weight: bold;
-        }
-        
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        
-        .today-info {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        
-        .today-info h2 {
-            margin-bottom: 10px;
-            font-size: 1.8rem;
-        }
-        
-        .today-info p {
-            margin-bottom: 5px;
-            font-size: 1.2rem;
-        }
-    </style>
+    <!-- calendar.cssを適用 -->
 </head>
 <body>
     <div class="calendar-container">
@@ -214,7 +97,7 @@ $current_day = (int)date('j');
         <table class="season-table">
             <thead>
                 <tr>
-                    <th colspan="3" class="season-header <?php echo strtolower($season_name); ?>"><?php echo $season_name; ?></th>
+                    <th colspan="3" class="season-header <?php echo $season_name; ?>"><?php echo $season_name; ?></th>
                 </tr>
                 <tr class="month-row">
                     <?php foreach ($months as $month): ?>
@@ -259,7 +142,29 @@ $current_day = (int)date('j');
     <script>
     // JavaScriptでの処理が必要な場合はここに記述
     document.addEventListener('DOMContentLoaded', function() {
-        // 今日の暦をハイライト表示する要素にスクロール
+        // URLからパラメータを取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromType = urlParams.get('from');
+        const fromIdx = urlParams.get('idx');
+        
+        // 直前のページから特定の暦へのリンクがある場合
+        if (fromType && fromIdx) {
+            // 該当する暦へのリンクを探す
+            let targetLink = document.querySelector(`a[href="index.php?type=${fromType}&idx=${fromIdx}"]`);
+            
+            // type=パラメータがない場合も考慮
+            if (!targetLink) {
+                targetLink = document.querySelector(`a[href="index.php?idx=${fromIdx}"]`);
+            }
+            
+            // 見つかった場合はその要素にスクロール
+            if (targetLink) {
+                targetLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return; // スクロール処理を終了
+            }
+        }
+        
+        // パラメータがない場合や該当する要素が見つからない場合は、今日の暦にスクロール
         const currentElements = document.querySelectorAll('.current');
         if (currentElements.length > 0) {
             currentElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });

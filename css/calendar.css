@@ -1,0 +1,239 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;600&display=swap');
+
+:root {
+  --color-spring: #f8b7cd; /* 桜色 */
+  --color-summer: #5ac2d9; /* 空色 */
+  --color-autumn: #c86b32; /* 柿色 */
+  --color-winter: #465d7b; /* 藍鼠 */
+  --color-bg: #f6f5f0; /* 生成り色 */
+  --color-text: #333333;
+  --color-link: #6a584c; /* 焦茶 */
+  --color-border: #d7c4bb; /* 白茶 */
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* style.cssのoverflow: hiddenを上書き */
+body {
+  font-family: 'Noto Serif JP', serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.7;
+  background-image: url('data:image/svg+xml;utf8,<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><rect width="20" height="20" fill="none" stroke="%23d7c4bb" stroke-width="0.5" stroke-opacity="0.2"/></svg>');
+  overflow: auto !important;
+  height: auto !important;
+  width: auto !important;
+}
+
+.calendar-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.calendar-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('data:image/svg+xml;utf8,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><path d="M30 5C40 20 40 40 30 55M5 30C20 40 40 40 55 30" stroke="%23d7c4bb" stroke-width="0.5" fill="none" stroke-opacity="0.1"/></svg>');
+  opacity: 0.2;
+  z-index: -1;
+}
+
+/* 見出し */
+h1 {
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--color-border);
+  letter-spacing: 0.1em;
+  position: relative;
+}
+
+h1::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 2px;
+  background-color: var(--color-text);
+}
+
+/* 今日の情報 */
+.today-info {
+  background-color: white;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  border-left: 4px solid var(--color-summer); /* 現在は夏なので */
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.today-info::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 50px 50px 0;
+  border-color: transparent var(--color-summer) transparent transparent;
+  opacity: 0.2;
+}
+
+.today-info h2 {
+  margin-top: 0;
+  font-weight: 500;
+  border-bottom: 1px dashed var(--color-border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.today-info p {
+  margin: 0.5rem 0;
+}
+
+.today-info strong {
+  font-size: 1.2em;
+  font-weight: 500;
+  color: var(--color-summer); /* 現在は夏なので */
+}
+
+/* 季節テーブル */
+.season-table {
+  width: 100%;
+  margin: 2rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.season-header {
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.2rem;
+  letter-spacing: 0.2em;
+  color: white;
+}
+
+.season-header.春 {
+  background-color: var(--color-spring);
+}
+
+.season-header.夏 {
+  background-color: var(--color-summer);
+}
+
+.season-header.秋 {
+  background-color: var(--color-autumn);
+}
+
+.season-header.冬 {
+  background-color: var(--color-winter);
+}
+
+.month-row th {
+  padding: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sekki-row th, .kou-row td {
+  padding: 0.5rem;
+  vertical-align: top;
+  border-right: 1px solid var(--color-border);
+}
+
+.sekki-row th:last-child, .kou-row td:last-child {
+  border-right: none;
+}
+
+.kou-row td {
+  background-color: white;
+}
+
+/* 節気と候のアイテム */
+.kou-item {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.kou-item a {
+  display: block;
+  color: var(--color-link);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.kou-item:hover {
+  background-color: rgba(215, 196, 187, 0.2);
+}
+
+.kou-item a:hover {
+  color: #000;
+}
+
+/* 現在の節気・候 */
+.kou-item.current {
+  background-color: rgba(90, 194, 217, 0.1);
+  border-left: 3px solid var(--color-summer);
+  padding-left: calc(0.5rem - 3px);
+  font-weight: 500;
+}
+
+.kou-item.current a {
+  color: var(--color-summer);
+}
+
+/* リンク */
+.back-link {
+  display: inline-block;
+  margin: 1rem 0;
+  padding: 0.5rem 1rem;
+  color: var(--color-link);
+  text-decoration: none;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.back-link:hover {
+  background-color: var(--color-border);
+  color: white;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .calendar-container {
+    padding: 1rem;
+    margin: 1rem;
+  }
+  
+  .season-table {
+    font-size: 0.9rem;
+  }
+  
+  .kou-item {
+    padding: 0.3rem;
+    margin: 0.3rem 0;
+  }
+}

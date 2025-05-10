@@ -7,6 +7,7 @@
 body {
     font-family: 'Noto Serif JP', serif;
     color: #fff;
+    background: #000;
     overflow: hidden;
     height: 100vh;
     width: 100vw;
@@ -142,7 +143,7 @@ body {
     writing-mode: vertical-rl;
     -webkit-writing-mode: vertical-rl;
     -ms-writing-mode: tb-rl;
-    text-orientation: mixed;
+    text-orientation: upright;
     max-height: 100vh;
     max-width: 90%;
     padding: 2rem;
