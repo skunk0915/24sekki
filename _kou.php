@@ -1,20 +1,6 @@
 <?php
-// 72kou.csvから指定インデックスの候を表示
-function load_kou_data($csv_file) {
-    $kou_list = array();
-    if (($handle = fopen($csv_file, "r")) !== FALSE) {
-        $header = fgetcsv($handle);
-        while (($row = fgetcsv($handle)) !== FALSE) {
-            $kou = array();
-            foreach ($header as $i => $col) {
-                $kou[$col] = isset($row[$i]) ? $row[$i] : '';
-            }
-            $kou_list[] = $kou;
-        }
-        fclose($handle);
-    }
-    return $kou_list;
-}
+// 共通関数を読み込み
+require_once 'functions.php';
 
 $kou_list = load_kou_data('72kou.csv');
 $idx = isset($_GET['idx']) ? intval($_GET['idx']) : 0;

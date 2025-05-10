@@ -1,127 +1,6 @@
 <?php
-// 72kou.csvを読み込んで候を表示
-function load_kou_data($csv_file) {
-    $kou_list = array();
-    if (($handle = fopen($csv_file, "r")) !== FALSE) {
-        $header = fgetcsv($handle);
-        while (($row = fgetcsv($handle)) !== FALSE) {
-            $kou = array();
-            foreach ($header as $i => $col) {
-                $kou[$col] = isset($row[$i]) ? $row[$i] : '';
-            }
-            $kou_list[] = $kou;
-        }
-        fclose($handle);
-    }
-    return $kou_list;
-}
-
-// 24sekki.csvを読み込む
-function load_sekki_data($csv_file) {
-    $sekki_list = array();
-    if (($handle = fopen($csv_file, "r")) !== FALSE) {
-        $header = fgetcsv($handle);
-        while (($row = fgetcsv($handle)) !== FALSE) {
-            $sekki = array();
-            foreach ($header as $i => $col) {
-                $sekki[$col] = isset($row[$i]) ? $row[$i] : '';
-            }
-            $sekki_list[] = $sekki;
-        }
-        fclose($handle);
-    }
-    return $sekki_list;
-}
-
-function get_today_kou($kou_list) {
-    // 月と日を別々に取得して数値比較を行う
-    $month = (int)date('n');
-    $day = (int)date('j');
-    
-    foreach ($kou_list as $kou) {
-        // 開始日と終了日を分解
-        list($start_month, $start_day) = explode('/', $kou['開始年月日']);
-        list($end_month, $end_day) = explode('/', $kou['終了年月日']);
-        
-        // 数値として比較
-        $start_month = (int)$start_month;
-        $start_day = (int)$start_day;
-        $end_month = (int)$end_month;
-        $end_day = (int)$end_day;
-        
-        // 月が同じ場合は日だけで比較
-        if ($month == $start_month && $month == $end_month) {
-            if ($day >= $start_day && $day <= $end_day) {
-                return $kou;
-            }
-        }
-        // 開始月と終了月が異なる場合
-        elseif ($start_month != $end_month) {
-            // 現在の月が開始月で、日が開始日以上
-            if ($month == $start_month && $day >= $start_day) {
-                return $kou;
-            }
-            // 現在の月が終了月で、日が終了日以下
-            elseif ($month == $end_month && $day <= $end_day) {
-                return $kou;
-            }
-            // 現在の月が開始月と終了月の間
-            elseif ($month > $start_month && $month < $end_month) {
-                return $kou;
-            }
-        }
-    }
-    
-    // デバッグ用に現在の日付を表示
-    error_log("現在の日付: {$month}/{$day}");
-    
-    // 範囲外の場合は最初の候を返す
-    return $kou_list[0];
-}
-
-// 今日の日付に該当する節気を取得
-function get_today_sekki($sekki_list) {
-    // 月と日を別々に取得して数値比較を行う
-    $month = (int)date('n');
-    $day = (int)date('j');
-    
-    foreach ($sekki_list as $sekki) {
-        // 開始日と終了日を分解
-        list($start_month, $start_day) = explode('/', $sekki['開始年月日']);
-        list($end_month, $end_day) = explode('/', $sekki['終了年月日']);
-        
-        // 数値として比較
-        $start_month = (int)$start_month;
-        $start_day = (int)$start_day;
-        $end_month = (int)$end_month;
-        $end_day = (int)$end_day;
-        
-        // 月が同じ場合は日だけで比較
-        if ($month == $start_month && $month == $end_month) {
-            if ($day >= $start_day && $day <= $end_day) {
-                return $sekki;
-            }
-        }
-        // 開始月と終了月が異なる場合
-        elseif ($start_month != $end_month) {
-            // 現在の月が開始月で、日が開始日以上
-            if ($month == $start_month && $day >= $start_day) {
-                return $sekki;
-            }
-            // 現在の月が終了月で、日が終了日以下
-            elseif ($month == $end_month && $day <= $end_day) {
-                return $sekki;
-            }
-            // 現在の月が開始月と終了月の間
-            elseif ($month > $start_month && $month < $end_month) {
-                return $sekki;
-            }
-        }
-    }
-    
-    // 範囲外の場合は最初の節気を返す
-    return $sekki_list[0];
-}
+// 共通関数を読み込み
+require_once 'functions.php';
 
 $kou_list = load_kou_data('72kou.csv');
 $sekki_list = load_sekki_data('24sekki.csv');
@@ -163,6 +42,15 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <!-- PWA対応 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4285f4">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="暦アプリ">
+    <link rel="apple-touch-icon" href="img/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16.png">
 </head>
 <body>
     <!-- 背景画像 -->
@@ -176,7 +64,6 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
             <div class="title-container">
                 <h2 class="sub-title"><?php echo htmlspecialchars($display_kou['読み']); ?></h2>
                 <h1 class="main-title"><?php echo htmlspecialchars($display_kou['和名']); ?></h1>
-            </div>
             <p class="description"><?php echo nl2br(htmlspecialchars($display_kou['本文'])); ?></p>
             <div class="date">
                 <p><?php echo htmlspecialchars($display_kou['開始年月日']); ?>～<?php echo htmlspecialchars($display_kou['終了年月日']); ?></p>
@@ -186,5 +73,26 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     </div>
 
     <script src="js/scripts.js"></script>
+    <script>
+        // サービスワーカーの登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./service-worker.js', {scope: './'})  // スコープを明示的に指定
+                    .then(function(registration) {
+                        console.log('ServiceWorker登録成功: ', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker登録失敗: ', error);
+                    });
+            });
+        }
+
+        // PWAインストールバナーの表示をデバッグ
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallpromptイベントが発生しました');
+            // イベントを保存しておく
+            window.deferredPrompt = e;
+        });
+    </script>
 </body>
 </html>

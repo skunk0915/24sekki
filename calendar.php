@@ -1,128 +1,6 @@
 <?php
 // 共通関数を読み込み
-// require_once '_kou.php'; // 関数の重複定義を避けるためコメントアウト
-
-// 72kou.csvを読み込む
-function load_kou_data($csv_file) {
-    $kou_list = array();
-    if (($handle = fopen($csv_file, "r")) !== FALSE) {
-        $header = fgetcsv($handle);
-        while (($row = fgetcsv($handle)) !== FALSE) {
-            $kou = array();
-            foreach ($header as $i => $col) {
-                $kou[$col] = isset($row[$i]) ? $row[$i] : '';
-            }
-            $kou_list[] = $kou;
-        }
-        fclose($handle);
-    }
-    return $kou_list;
-}
-
-// 24sekki.csvを読み込む
-function load_sekki_data($csv_file) {
-    $sekki_list = array();
-    if (($handle = fopen($csv_file, "r")) !== FALSE) {
-        $header = fgetcsv($handle);
-        while (($row = fgetcsv($handle)) !== FALSE) {
-            $sekki = array();
-            foreach ($header as $i => $col) {
-                $sekki[$col] = isset($row[$i]) ? $row[$i] : '';
-            }
-            $sekki_list[] = $sekki;
-        }
-        fclose($handle);
-    }
-    return $sekki_list;
-}
-
-// 今日の日付に該当する候を取得
-function get_today_kou($kou_list) {
-    // 月と日を別々に取得して数値比較を行う
-    $month = (int)date('n');
-    $day = (int)date('j');
-    
-    foreach ($kou_list as $kou) {
-        // 開始日と終了日を分解
-        list($start_month, $start_day) = explode('/', $kou['開始年月日']);
-        list($end_month, $end_day) = explode('/', $kou['終了年月日']);
-        
-        // 数値として比較
-        $start_month = (int)$start_month;
-        $start_day = (int)$start_day;
-        $end_month = (int)$end_month;
-        $end_day = (int)$end_day;
-        
-        // 月が同じ場合は日だけで比較
-        if ($month == $start_month && $month == $end_month) {
-            if ($day >= $start_day && $day <= $end_day) {
-                return $kou;
-            }
-        }
-        // 開始月と終了月が異なる場合
-        elseif ($start_month != $end_month) {
-            // 現在の月が開始月で、日が開始日以上
-            if ($month == $start_month && $day >= $start_day) {
-                return $kou;
-            }
-            // 現在の月が終了月で、日が終了日以下
-            elseif ($month == $end_month && $day <= $end_day) {
-                return $kou;
-            }
-            // 現在の月が開始月と終了月の間
-            elseif ($month > $start_month && $month < $end_month) {
-                return $kou;
-            }
-        }
-    }
-    
-    // 範囲外の場合は最初の候を返す
-    return $kou_list[0];
-}
-
-// 今日の日付に該当する節気を取得
-function get_today_sekki($sekki_list) {
-    // 月と日を別々に取得して数値比較を行う
-    $month = (int)date('n');
-    $day = (int)date('j');
-    
-    foreach ($sekki_list as $sekki) {
-        // 開始日と終了日を分解
-        list($start_month, $start_day) = explode('/', $sekki['開始年月日']);
-        list($end_month, $end_day) = explode('/', $sekki['終了年月日']);
-        
-        // 数値として比較
-        $start_month = (int)$start_month;
-        $start_day = (int)$start_day;
-        $end_month = (int)$end_month;
-        $end_day = (int)$end_day;
-        
-        // 月が同じ場合は日だけで比較
-        if ($month == $start_month && $month == $end_month) {
-            if ($day >= $start_day && $day <= $end_day) {
-                return $sekki;
-            }
-        }
-        // 開始月と終了月が異なる場合
-        elseif ($start_month != $end_month) {
-            // 現在の月が開始月で、日が開始日以上
-            if ($month == $start_month && $day >= $start_day) {
-                return $sekki;
-            }
-            // 現在の月が終了月で、日が終了日以下
-            elseif ($month == $end_month && $day <= $end_day) {
-                return $sekki;
-            }
-            // 現在の月が開始月と終了月の間
-            elseif ($month > $start_month && $month < $end_month) {
-                return $sekki;
-            }
-        }
-    }
-    
-    // 範囲外の場合は最初の節気を返す
-    return $sekki_list[0];
-}
+require_once 'functions.php';
 
 // データ読み込み
 $kou_list = load_kou_data('72kou.csv');
@@ -136,38 +14,7 @@ $today_sekki = get_today_sekki($sekki_list);
 $today_calendar = $today_kou;
 $is_kou_today = true;
 
-// 日付が範囲内かどうかを判定する関数
-function check_date_in_range($month, $day, $start_date, $end_date) {
-    list($start_month, $start_day) = explode('/', $start_date);
-    list($end_month, $end_day) = explode('/', $end_date);
-    
-    // 数値として比較
-    $start_month = (int)$start_month;
-    $start_day = (int)$start_day;
-    $end_month = (int)$end_month;
-    $end_day = (int)$end_day;
-    
-    // 月が同じ場合は日だけで比較
-    if ($month == $start_month && $month == $end_month) {
-        return $day >= $start_day && $day <= $end_day;
-    }
-    // 開始月と終了月が異なる場合
-    elseif ($start_month != $end_month) {
-        // 現在の月が開始月で、日が開始日以上
-        if ($month == $start_month && $day >= $start_day) {
-            return true;
-        }
-        // 現在の月が終了月で、日が終了日以下
-        elseif ($month == $end_month && $day <= $end_day) {
-            return true;
-        }
-        // 現在の月が開始月と終了月の間
-        elseif ($month > $start_month && $month < $end_month) {
-            return true;
-        }
-    }
-    return false;
-}
+
 
 // 表示用の季節データを準備
 $seasons = [
@@ -211,6 +58,15 @@ $current_day = (int)date('j');
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <!-- PWA対応 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4285f4">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="暦アプリ">
+    <link rel="apple-touch-icon" href="img/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16.png">
     <style>
         body {
             overflow: auto;
@@ -408,6 +264,26 @@ $current_day = (int)date('j');
         if (currentElements.length > 0) {
             currentElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+    });
+    
+    // サービスワーカーの登録
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./service-worker.js', {scope: './'})  // スコープを明示的に指定
+                .then(function(registration) {
+                    console.log('ServiceWorker登録成功: ', registration.scope);
+                })
+                .catch(function(error) {
+                    console.log('ServiceWorker登録失敗: ', error);
+                });
+        });
+    }
+    
+    // PWAインストールバナーの表示をデバッグ
+    window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('beforeinstallpromptイベントが発生しました');
+        // イベントを保存しておく
+        window.deferredPrompt = e;
     });
     </script>
 </body>
