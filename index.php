@@ -15,6 +15,9 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
         // 節気データを候データの形式に合わせる
         $display_kou['候名'] = $display_kou['節気名'];
         $display_kou['和名'] = $display_kou['節気名'];
+        if (!isset($display_kou['読み'])) {
+            $display_kou['読み'] = $display_kou['節気名'];
+        }
         
         // 前後の節気を取得
         $prev_sekki = get_prev_sekki($sekki_list, $idx);
@@ -101,6 +104,19 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     <div class="content">
         <div class="vertical-text">
             <div class="title-container">
+                <?php 
+                // 七十二候の場合のみ、対応する二十四節気を表示
+                if ($current_type === 'kou') {
+                    $kou_idx = array_search($display_kou, $kou_list);
+                    if ($kou_idx !== false) {
+                        $related_sekki = get_sekki_for_kou($kou_idx, $kou_list, $sekki_list);
+                        $sekki_idx = array_search($related_sekki, $sekki_list);
+                        if ($sekki_idx !== false) {
+                            echo '<div class="sekki-link"><a href="index.php?type=sekki&idx=' . $sekki_idx . '">' . htmlspecialchars($related_sekki['節気名']) . '</a></div>';
+                        }
+                    }
+                }
+                ?>
                 <h2 class="sub-title"><?php echo htmlspecialchars($display_kou['読み']); ?></h2>
                 <h1 class="main-title"><?php echo htmlspecialchars($display_kou['和名']); ?></h1>
             <p class="description"><?php 
@@ -123,6 +139,29 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                 ?></p>
             </div>
             
+            <?php 
+            // 二十四節気表示時に、その節気に含まれる七十二候をリスト表示
+            if ($current_type === 'sekki') {
+                // 節気のインデックスを取得
+                // ここでは直接$idxを使用することで、array_searchの問題を回避
+                $sekki_idx = $idx;
+                
+                // この節気に関連する七十二候を取得
+                $related_kou = get_kou_for_sekki($sekki_idx, $kou_list, $sekki_list);
+                
+                if (!empty($related_kou)) {
+                    echo '<div class="related-kou-list">';
+                    echo '<p class="related-kou-title">この節気の七十二候</p>';
+                    echo '<ul>';
+                    foreach ($related_kou as $kou) {
+                        echo '<li><a href="index.php?type=kou&idx=' . $kou['idx'] . '">' . htmlspecialchars($kou['data']['和名']) . '</a></li>';
+                    }
+                    echo '</ul>';
+                    echo '</div>';
+                }
+            }
+            ?>
+            
             <?php if (isset($prev_link) && isset($next_link)): ?>
             <div class="navigation">
                 <a href="<?php echo $prev_link; ?>" class="nav-button prev-button">前の暦</a>
@@ -136,45 +175,6 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     </div>
 
     <script src="js/scripts.js"></script>
-    <style>
-        /* ナビゲーションボタンのスタイル */
-        .navigation {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-            width: 100%;
-        }
-        
-        .nav-button {
-            display: inline-block;
-            padding: 8px 15px;
-            background-color: rgba(255, 255, 255, 0.8);
-            color: #333;
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            transition: background-color 0.3s;
-        }
-        
-        .nav-button:hover {
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-        
-        .calendar-button {
-            display: inline-block;
-            padding: 8px 15px;
-            background-color: rgba(255, 255, 255, 0.8);
-            color: #333;
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            transition: background-color 0.3s;
-        }
-        
-        .calendar-button:hover {
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-    </style>
     <script>
         // サービスワーカーの登録
         if ('serviceWorker' in navigator) {

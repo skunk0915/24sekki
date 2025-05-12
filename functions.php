@@ -259,3 +259,60 @@ function get_next_sekki($sekki_list, $current_idx) {
     }
     return null;
 }
+
+/**
+ * 七十二候と二十四節気の対応関係を定義
+ * 各七十二候がどの二十四節気に属するかのマッピング
+ * 
+ * @param int $kou_idx 候のインデックス
+ * @param array $kou_list 候のリスト
+ * @param array $sekki_list 節気のリスト
+ * @return array 対応する節気
+ */
+function get_sekki_for_kou($kou_idx, $kou_list, $sekki_list) {
+    // 七十二候は72個、二十四節気は24個なので、3つの候が1つの節気に対応
+    $sekki_idx = floor($kou_idx / 3);
+    // 循環するように調整（72候の場合は24節気の範囲内に収める）
+    if ($sekki_idx >= count($sekki_list)) {
+        $sekki_idx = $sekki_idx % count($sekki_list);
+    }
+    return $sekki_list[$sekki_idx];
+}
+
+/**
+ * 二十四節気に含まれる七十二候を取得する関数
+ * 
+ * @param int $sekki_idx 節気のインデックス
+ * @param array $kou_list 候のリスト
+ * @param array $sekki_list 節気のリスト
+ * @return array 関連する候の配列
+ */
+function get_kou_for_sekki($sekki_idx, $kou_list, $sekki_list) {
+    $related_kou = [];
+    
+    // 一つの節気には3つの候が含まれる
+    $start_idx = $sekki_idx * 3;
+    
+    // 候の数が72より少ない場合は循環するように調整
+    $total_kou = count($kou_list);
+    
+    // 3つの候を取得
+    for ($i = 0; $i < 3; $i++) {
+        $kou_idx = $start_idx + $i;
+        
+        // 候のインデックスが範囲内か確認、範囲外なら循環させる
+        if ($kou_idx >= $total_kou) {
+            $kou_idx = $kou_idx % $total_kou;
+        }
+        
+        // 候が存在する場合のみ追加
+        if (isset($kou_list[$kou_idx])) {
+            $related_kou[] = [
+                'idx' => $kou_idx,
+                'data' => $kou_list[$kou_idx]
+            ];
+        }
+    }
+    
+    return $related_kou;
+}

@@ -14,6 +14,7 @@ body {
     height: 100vh;
     width: 100vw;
 }
+
 .background {
     position: absolute;
     top: 0;
@@ -38,16 +39,21 @@ body {
     background-color: rgba(0, 0, 0, 0.3);
     z-index: -1;
 }
+
 .kou-list {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
     z-index: 10;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
 }
+
 .kou-list ul {
     background: rgba(0, 0, 0, 0.7);
     border-radius: 8px;
@@ -57,9 +63,11 @@ body {
     list-style: none;
     width: 100%;
 }
+
 .kou-list li {
     margin: 0.5em 0;
 }
+
 .kou-list a {
     color: #fff;
     text-decoration: none;
@@ -128,9 +136,11 @@ body {
 .calendar-link:hover {
     background: rgba(255, 255, 255, 0.3);
 }
+
 .kou-list.hidden {
     display: none;
 }
+
 .content {
     position: relative;
     z-index: 1;
@@ -199,7 +209,11 @@ body {
 .vertical-text::-webkit-scrollbar-track {
     background-color: rgba(0, 0, 0, 0.1);
 }
-#menuBtn, #closeMenu, .back, .calendar-button {
+
+#menuBtn,
+#closeMenu,
+.back,
+.calendar-button {
     background: rgba(255, 255, 255, 0.2);
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.5);
@@ -213,7 +227,10 @@ body {
     transition: background 0.3s;
 }
 
-#menuBtn:hover, #closeMenu:hover, .back:hover, .calendar-button:hover {
+#menuBtn:hover,
+#closeMenu:hover,
+.back:hover,
+.calendar-button:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
@@ -222,8 +239,112 @@ body {
     top: 1em;
     left: 1em;
 }
+
 .kou-range {
     margin-top: 2em;
     font-size: 1.1em;
     color: #333;
+}
+
+/* 二十四節気に含まれる七十二候リストのスタイル */
+.related-kou-list {
+    margin: 20px 0;
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.related-kou-title {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.related-kou-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.related-kou-list li {
+    margin: 3px 5px;
+}
+
+.related-kou-list a {
+    color: rgba(0, 0, 0, 0.8);
+    text-decoration: none;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.related-kou-list a:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #000;
+}
+
+/* 二十四節気リンクのスタイル */
+.sekki-link {
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.sekki-link a {
+    color: rgba(0, 0, 0, 0.7);
+    text-decoration: none;
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.sekki-link a:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #000;
+}
+
+/* ナビゲーションボタンのスタイル */
+.navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.nav-button {
+    display: inline-block;
+    padding: 8px 15px;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #333;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+}
+
+.nav-button:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+.calendar-button {
+    display: inline-block;
+    padding: 8px 15px;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #333;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+}
+
+.calendar-button:hover {
+    background-color: rgba(255, 255, 255, 0.9);
 }
