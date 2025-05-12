@@ -86,7 +86,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     <meta name="theme-color" content="transparent">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="暦アプリ">
+    <meta name="apple-mobile-web-app-title" content="二十四節気・七十二候">
     <link rel="apple-touch-icon" href="img/favicon/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16.png">
@@ -103,7 +103,12 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
             <div class="title-container">
                 <h2 class="sub-title"><?php echo htmlspecialchars($display_kou['読み']); ?></h2>
                 <h1 class="main-title"><?php echo htmlspecialchars($display_kou['和名']); ?></h1>
-            <p class="description"><?php echo nl2br(htmlspecialchars($display_kou['本文'])); ?></p>
+            <p class="description"><?php 
+                $text = htmlspecialchars($display_kou['本文']);
+                // 句点（。）の後に<br>タグを追加
+                $text = str_replace('。', '。<br>', $text);
+                echo $text;
+            ?></p>
             <div class="date">
                 <p><?php 
                     // 開始年月日を処理

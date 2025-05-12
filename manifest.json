@@ -1,7 +1,7 @@
 {
-  "name": "暦アプリ",
-  "short_name": "暦",
-  "description": "暦情報を表示するアプリケーション",
+  "name": "こよみ",
+  "short_name": "こよみ",
+  "description": "二十四節気と七十二候を表示するアプリケーション",
   "start_url": "./index.php",
   "id": "/",
   "scope": "/",

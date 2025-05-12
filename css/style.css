@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Hina+Mincho&display=swap');
+
 * {
     margin: 0;
     padding: 0;
@@ -5,7 +7,7 @@
 }
 
 body {
-    font-family: 'Noto Serif JP', serif;
+    font-family: 'Hina Mincho', serif;
     color: #fff;
     background: #000;
     overflow: hidden;
@@ -145,8 +147,8 @@ body {
     -ms-writing-mode: tb-rl;
     text-orientation: upright;
     max-height: 100vh;
-    max-width: 90%;
-    padding: 2rem;
+    max-width: 100%;
+    padding: 1rem 0;
     overflow-x: auto;
 }
 
@@ -158,19 +160,20 @@ body {
 
 .main-title {
     font-size: 5rem;
-    font-weight: 700;
+    font-weight: normal;
     letter-spacing: 0.1em;
 }
 
 .sub-title {
     font-size: 1.5rem;
+    font-weight: normal;
     letter-spacing: 0.05em;
     margin-right: 0.5rem;
 }
 
 .description {
     font-size: 1.125rem;
-    line-height: 2;
+    line-height: 2.5;
     letter-spacing: 0.05em;
     white-space: pre-line;
     text-shadow: 0 0 5px black;

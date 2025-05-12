@@ -159,7 +159,7 @@ $from_idx = isset($_GET['idx']) ? (int)$_GET['idx'] : -1;
             
             // 見つかった場合はその要素にスクロール
             if (targetLink) {
-                targetLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // targetLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return; // スクロール処理を終了
             }
         }
