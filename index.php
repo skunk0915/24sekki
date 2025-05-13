@@ -18,11 +18,11 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
         if (!isset($display_kou['読み'])) {
             $display_kou['読み'] = $display_kou['節気名'];
         }
-        
+
         // 前後の節気を取得
         $prev_sekki = get_prev_sekki($sekki_list, $idx);
         $next_sekki = get_next_sekki($sekki_list, $idx);
-        
+
         // ナビゲーション用のリンクを準備
         $prev_link = "index.php?type=sekki&idx=" . array_search($prev_sekki, $sekki_list);
         $next_link = "index.php?type=sekki&idx=" . array_search($next_sekki, $sekki_list);
@@ -30,11 +30,11 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     } else {
         if ($idx < 0 || $idx >= count($kou_list)) $idx = 0;
         $display_kou = $kou_list[$idx];
-        
+
         // 前後の候を取得
         $prev_kou = get_prev_kou($kou_list, $idx);
         $next_kou = get_next_kou($kou_list, $idx);
-        
+
         // ナビゲーション用のリンクを準備
         $prev_link = "index.php?type=kou&idx=" . array_search($prev_kou, $kou_list);
         $next_link = "index.php?type=kou&idx=" . array_search($next_kou, $kou_list);
@@ -44,11 +44,11 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     $idx = intval($_GET['idx']);
     if ($idx < 0 || $idx >= count($kou_list)) $idx = 0;
     $display_kou = $kou_list[$idx];
-    
+
     // 前後の候を取得
     $prev_kou = get_prev_kou($kou_list, $idx);
     $next_kou = get_next_kou($kou_list, $idx);
-    
+
     // ナビゲーション用のリンクを準備
     $prev_link = "index.php?idx=" . array_search($prev_kou, $kou_list);
     $next_link = "index.php?idx=" . array_search($next_kou, $kou_list);
@@ -57,17 +57,17 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     // 今日の候と節気を取得
     $today_kou = get_today_kou($kou_list);
     $today_sekki = get_today_sekki($sekki_list);
-    
+
     // 七十二候を優先する
     $display_kou = $today_kou;
-    
+
     // 今日の候のインデックスを取得
     $idx = array_search($today_kou, $kou_list);
-    
+
     // 前後の候を取得
     $prev_kou = get_prev_kou($kou_list, $idx);
     $next_kou = get_next_kou($kou_list, $idx);
-    
+
     // ナビゲーション用のリンクを準備
     $prev_link = "index.php?type=kou&idx=" . array_search($prev_kou, $kou_list);
     $next_link = "index.php?type=kou&idx=" . array_search($next_kou, $kou_list);
@@ -76,6 +76,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
 ?>
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -94,6 +95,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16.png">
 </head>
+
 <body>
     <!-- 背景画像 -->
     <div class="background">
@@ -104,7 +106,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     <div class="content">
         <div class="vertical-text">
             <div class="title-container">
-                <?php 
+                <?php
                 // 七十二候の場合のみ、対応する二十四節気を表示
                 if ($current_type === 'kou') {
                     $kou_idx = array_search($display_kou, $kou_list);
@@ -117,84 +119,92 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                     }
                 }
                 ?>
-                <h2 class="sub-title"><?php echo htmlspecialchars($display_kou['読み']); ?></h2>
-                <h1 class="main-title"><?php echo htmlspecialchars($display_kou['和名']); ?></h1>
-            <p class="description"><?php 
+                <div class="title_wrapper">
+                    <h2 class="sub-title"><?php echo htmlspecialchars($display_kou['読み']); ?></h2>
+                    <h1 class="main-title"><?php echo htmlspecialchars($display_kou['和名']); ?></h1>
+                </div>
+                <div class="date">
+                    <p><?php
+                        // 開始年月日を処理
+                        $start_date = htmlspecialchars($display_kou['開始年月日']);
+                        $start_date = preg_replace('/([0-9]+)/', '<span class="num">$1</span>', $start_date);
+
+                        // 終了年月日を処理
+                        $end_date = htmlspecialchars($display_kou['終了年月日']);
+                        $end_date = preg_replace('/([0-9]+)/', '<span class="num">$1</span>', $end_date);
+
+                        echo $start_date . '～' . $end_date;
+                        ?></p>
+                </div>
+
+
+                <?php
+                // 二十四節気表示時に、その節気に含まれる七十二候をリスト表示
+                if ($current_type === 'sekki') {
+                    // 節気のインデックスを取得
+                    // ここでは直接$idxを使用することで、array_searchの問題を回避
+                    $sekki_idx = $idx;
+
+                    // この節気に関連する七十二候を取得
+                    $related_kou = get_kou_for_sekki($sekki_idx, $kou_list, $sekki_list);
+
+                    echo '<div class="includes">';
+                    if (!empty($related_kou)) {
+                        foreach ($related_kou as $kou) {
+                            echo '<a href="index.php?type=kou&idx=' . $kou['idx'] . '">' . htmlspecialchars($kou['data']['和名']) . '</a>';
+                        }
+                    }
+                    echo '</div>';
+                }
+                ?>
+            </div>
+            <p class="description">
+                <?php
                 $text = htmlspecialchars($display_kou['本文']);
                 // 句点（。）の後に<br>タグを追加
                 $text = str_replace('。', '。<br>', $text);
                 echo $text;
-            ?></p>
-            <div class="date">
-                <p><?php 
-                    // 開始年月日を処理
-                    $start_date = htmlspecialchars($display_kou['開始年月日']);
-                    $start_date = preg_replace('/([0-9]+)/', '<span class="num">$1</span>', $start_date);
-                    
-                    // 終了年月日を処理
-                    $end_date = htmlspecialchars($display_kou['終了年月日']);
-                    $end_date = preg_replace('/([0-9]+)/', '<span class="num">$1</span>', $end_date);
-                    
-                    echo $start_date . '～' . $end_date;
-                ?></p>
-            </div>
-            
-            <?php 
-            // 二十四節気表示時に、その節気に含まれる七十二候をリスト表示
-            if ($current_type === 'sekki') {
-                // 節気のインデックスを取得
-                // ここでは直接$idxを使用することで、array_searchの問題を回避
-                $sekki_idx = $idx;
-                
-                // この節気に関連する七十二候を取得
-                $related_kou = get_kou_for_sekki($sekki_idx, $kou_list, $sekki_list);
-                
-                if (!empty($related_kou)) {
-                    echo '<div class="related-kou-list">';
-                    echo '<p class="related-kou-title">この節気の七十二候</p>';
-                    echo '<ul>';
-                    foreach ($related_kou as $kou) {
-                        echo '<li><a href="index.php?type=kou&idx=' . $kou['idx'] . '">' . htmlspecialchars($kou['data']['和名']) . '</a></li>';
-                    }
-                    echo '</ul>';
-                    echo '</div>';
-                }
-            }
-            ?>
-            
+                ?>
+            </p>
+
+
+
             <?php if (isset($prev_link) && isset($next_link)): ?>
-            <div class="navigation">
-                <a href="<?php echo $prev_link; ?>" class="nav-button prev-button">前の暦</a>
-                <a href="calendar.php?from=<?php echo $current_type; ?>&idx=<?php echo $idx; ?>" class="calendar-button">暦カレンダー</a>
-                <a href="<?php echo $next_link; ?>" class="nav-button next-button">次の暦</a>
-            </div>
+                <div class="navigation">
+                    <a href="<?php echo $prev_link; ?>" class="nav-button prev-button">前の暦</a>
+                    <a href="calendar.php?from=<?php echo $current_type; ?>&idx=<?php echo $idx; ?>" class="calendar-button">暦カレンダー</a>
+                    <a href="<?php echo $next_link; ?>" class="nav-button next-button">次の暦</a>
+                </div>
             <?php else: ?>
-            <a href="calendar.php" class="calendar-button">暦カレンダーを見る</a>
+                <a href="calendar.php" class="calendar-button">暦カレンダーを見る</a>
             <?php endif; ?>
+
         </div>
-    </div>
 
-    <script src="js/scripts.js"></script>
-    <script>
-        // サービスワーカーの登録
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('./service-worker.js', {scope: './'})  // スコープを明示的に指定
-                    .then(function(registration) {
-                        console.log('ServiceWorker登録成功: ', registration.scope);
-                    })
-                    .catch(function(error) {
-                        console.log('ServiceWorker登録失敗: ', error);
-                    });
+        <script src="js/scripts.js"></script>
+        <script>
+            // サービスワーカーの登録
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('./service-worker.js', {
+                            scope: './'
+                        }) // スコープを明示的に指定
+                        .then(function(registration) {
+                            console.log('ServiceWorker登録成功: ', registration.scope);
+                        })
+                        .catch(function(error) {
+                            console.log('ServiceWorker登録失敗: ', error);
+                        });
+                });
+            }
+
+            // PWAインストールバナーの表示をデバッグ
+            window.addEventListener('beforeinstallprompt', (e) => {
+                console.log('beforeinstallpromptイベントが発生しました');
+                // イベントを保存しておく
+                window.deferredPrompt = e;
             });
-        }
-
-        // PWAインストールバナーの表示をデバッグ
-        window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('beforeinstallpromptイベントが発生しました');
-            // イベントを保存しておく
-            window.deferredPrompt = e;
-        });
-    </script>
+        </script>
 </body>
+
 </html>
