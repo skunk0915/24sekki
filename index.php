@@ -171,9 +171,9 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
 
             <?php if (isset($prev_link) && isset($next_link)): ?>
                 <div class="navigation">
-                    <a href="<?php echo $prev_link; ?>" class="nav-button prev-button">前の暦</a>
-                    <a href="calendar.php?from=<?php echo $current_type; ?>&idx=<?php echo $idx; ?>" class="calendar-button">暦カレンダー</a>
-                    <a href="<?php echo $next_link; ?>" class="nav-button next-button">次の暦</a>
+                    <a href="<?php echo $prev_link; ?>" class="nav-button prev-button"><?php echo $current_type === 'kou' ? htmlspecialchars($prev_kou['和名']) : htmlspecialchars($prev_sekki['節気名']); ?></a>
+                    <a href="calendar.php?from=<?php echo $current_type; ?>&idx=<?php echo $idx; ?>" class="calendar-button">暦一覧</a>
+                    <a href="<?php echo $next_link; ?>" class="nav-button next-button"><?php echo $current_type === 'kou' ? htmlspecialchars($next_kou['和名']) : htmlspecialchars($next_sekki['節気名']); ?></a>
                 </div>
             <?php else: ?>
                 <a href="calendar.php" class="calendar-button">暦カレンダーを見る</a>

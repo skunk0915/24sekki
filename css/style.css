@@ -332,6 +332,7 @@ body {
 .navigation {
     display: flex;
     justify-content: space-between;
+    letter-spacing: .3em;
 }
 
 .nav-button {
