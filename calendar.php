@@ -34,14 +34,10 @@ foreach ($sekki_list as $sekki) {
     $sekki_by_month[$month][] = $sekki;
 }
 
-// 七十二候を月ごとにグループ化
-$kou_by_month = [];
-foreach ($kou_list as $kou) {
-    $month = (int)explode('/', $kou['開始年月日'])[0];
-    if (!isset($kou_by_month[$month])) {
-        $kou_by_month[$month] = [];
-    }
-    $kou_by_month[$month][] = $kou;
+// 七十二候を二十四節気ごとにグループ化
+$kou_by_sekki = [];
+foreach ($sekki_list as $sekki_idx => $sekki) {
+    $kou_by_sekki[$sekki_idx] = get_kou_for_sekki($sekki_idx, $kou_list, $sekki_list);
 }
 
 // 現在の月と日を取得
@@ -122,11 +118,17 @@ $from_idx = isset($_GET['idx']) ? (int)$_GET['idx'] : -1;
                 <tr class="kou-row">
                     <?php foreach ($months as $month): ?>
                     <td>
-                        <?php if (isset($kou_by_month[$month])): ?>
-                            <?php foreach ($kou_by_month[$month] as $kou): ?>
-                                <div class="kou-item <?php echo ($current_month == $month && check_date_in_range($current_month, $current_day, $kou['開始年月日'], $kou['終了年月日'])) ? 'current' : ''; ?>">
-                                    <a href="index.php?type=kou&idx=<?php echo array_search($kou, $kou_list); ?>"><?php echo htmlspecialchars($kou['和名']); ?></a>
-                                </div>
+                        <?php if (isset($sekki_by_month[$month])): ?>
+                            <?php foreach ($sekki_by_month[$month] as $sekki): ?>
+                                <?php $sekki_idx = array_search($sekki, $sekki_list); ?>
+                                <?php if (isset($kou_by_sekki[$sekki_idx])): ?>
+                                    <?php foreach ($kou_by_sekki[$sekki_idx] as $kou_info): ?>
+                                        <?php $kou = $kou_info['data']; $kou_idx = $kou_info['idx']; ?>
+                                        <div class="kou-item <?php echo ($current_month == $month && check_date_in_range($current_month, $current_day, $kou['開始年月日'], $kou['終了年月日'])) ? 'current' : ''; ?>">
+                                            <a href="index.php?type=kou&idx=<?php echo $kou_idx; ?>"><?php echo htmlspecialchars($kou['和名']); ?></a>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </td>

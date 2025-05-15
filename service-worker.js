@@ -98,6 +98,26 @@ self.addEventListener('fetch', function(event) {
 
 // 古いキャッシュの削除
 self.addEventListener('activate', function(event) {
+});
+
+// --- ここからWeb Push通知対応 ---
+self.addEventListener('push', function (event) {
+  let data = {};
+  try {
+    data = event.data.json();
+  } catch (e) {
+    data = { title: '通知', body: '新しいお知らせがあります' };
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/img/favicon/icon-192.png', // 必要に応じてパス調整
+    })
+  );
+});
+// --- ここまでWeb Push通知対応 ---
+
+self.addEventListener('activate', function(event) {
   console.log('サービスワーカーをアクティベート中...');
   var cacheWhitelist = [CACHE_NAME];
   

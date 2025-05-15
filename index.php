@@ -119,6 +119,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     <link rel="apple-touch-icon" href="img/favicon/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16.png">
+    
 </head>
 
 <body>
@@ -207,6 +208,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
         </div>
 
         <script src="js/scripts.js"></script>
+        <script src="js/app.js"></script>
         <script>
             // サービスワーカーの登録
             if ('serviceWorker' in navigator) {
