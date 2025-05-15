@@ -41,7 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
     btn = document.createElement('button');
     btn.id = 'push-subscribe-btn';
     btn.textContent = 'プッシュ通知を有効化';
-    document.body.appendChild(btn);
+    // ここを修正
+    const area = document.getElementById('push-btn-area');
+    if (area) {
+      area.appendChild(btn);
+    } else {
+      document.body.appendChild(btn);
+    }
   }
   btn.onclick = subscribeUser;
 });

@@ -162,7 +162,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                         echo $start_date . '～' . $end_date;
                         ?></p>
                 </div>
-
+                <div id="push-btn-area"></div>
 
                 <?php
                 // 二十四節気表示時に、その節気に含まれる七十二候をリスト表示
@@ -208,7 +208,6 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
         </div>
 
         <script src="js/scripts.js"></script>
-        <script src="js/app.js"></script>
         <script>
             // サービスワーカーの登録
             if ('serviceWorker' in navigator) {
@@ -232,6 +231,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                 window.deferredPrompt = e;
             });
         </script>
+        <script src="js/app.js"></script>
 </body>
 
 </html>
