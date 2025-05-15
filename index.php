@@ -54,24 +54,49 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     $next_link = "index.php?idx=" . array_search($next_kou, $kou_list);
     $current_type = 'kou';
 } else {
+    echo "<!--";var_dump('20ee',$mei_count);echo "-->";
     // 今日の候と節気を取得
     $today_kou = get_today_kou($kou_list);
     $today_sekki = get_today_sekki($sekki_list);
 
-    // 七十二候を優先する
-    $display_kou = $today_kou;
-
-    // 今日の候のインデックスを取得
-    $idx = array_search($today_kou, $kou_list);
-
-    // 前後の候を取得
-    $prev_kou = get_prev_kou($kou_list, $idx);
-    $next_kou = get_next_kou($kou_list, $idx);
-
-    // ナビゲーション用のリンクを準備
-    $prev_link = "index.php?type=kou&idx=" . array_search($prev_kou, $kou_list);
-    $next_link = "index.php?type=kou&idx=" . array_search($next_kou, $kou_list);
-    $current_type = 'kou';
+    // 今日の日付を M/D 形式に変換
+    $today_md = date('n/j');
+    $found_sekki = null;
+    foreach ($sekki_list as $i => $sekki) {
+        if (isset($sekki['開始年月日']) && $sekki['開始年月日'] === $today_md) {
+            $found_sekki = $sekki;
+            $found_sekki['候名'] = $found_sekki['節気名'];
+            $found_sekki['和名'] = $found_sekki['節気名'];
+            if (!isset($found_sekki['読み'])) {
+                $found_sekki['読み'] = $found_sekki['節気名'];
+            }
+            $idx = $i;
+            break;
+        }
+    }
+    if ($found_sekki !== null) {
+        // 二十四節気の初日を優先
+        $display_kou = $found_sekki;
+        // 前後の節気を取得
+        $prev_sekki = get_prev_sekki($sekki_list, $idx);
+        $next_sekki = get_next_sekki($sekki_list, $idx);
+        // ナビゲーション用のリンクを準備
+        $prev_link = "index.php?type=sekki&idx=" . array_search($prev_sekki, $sekki_list);
+        $next_link = "index.php?type=sekki&idx=" . array_search($next_sekki, $sekki_list);
+        $current_type = 'sekki';
+    } else {
+        // 七十二候を優先する
+        $display_kou = $today_kou;
+        // 今日の候のインデックスを取得
+        $idx = array_search($today_kou, $kou_list);
+        // 前後の候を取得
+        $prev_kou = get_prev_kou($kou_list, $idx);
+        $next_kou = get_next_kou($kou_list, $idx);
+        // ナビゲーション用のリンクを準備
+        $prev_link = "index.php?type=kou&idx=" . array_search($prev_kou, $kou_list);
+        $next_link = "index.php?type=kou&idx=" . array_search($next_kou, $kou_list);
+        $current_type = 'kou';
+    }
 }
 ?>
 <!DOCTYPE html>
