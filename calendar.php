@@ -50,6 +50,7 @@ $from_idx = isset($_GET['idx']) ? (int)$_GET['idx'] : -1;
 ?>
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -70,128 +71,140 @@ $from_idx = isset($_GET['idx']) ? (int)$_GET['idx'] : -1;
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16.png">
     <!-- calendar.cssを適用 -->
 </head>
+
 <body>
     <div class="calendar-container">
         <h1>二十四節気と七十二候</h1>
-        
+
         <div class="today-info">
             <h2>今日の暦</h2>
             <p><?php echo date('Y年n月j日'); ?></p>
             <p>
-                <?php if ($is_kou_today): ?>
-                    七十二候: <strong><?php echo htmlspecialchars($today_kou['和名']); ?></strong>（<?php echo htmlspecialchars($today_kou['読み']); ?>）
-                <?php else: ?>
-                    二十四節気: <strong><?php echo htmlspecialchars($today_sekki['節気名']); ?></strong>（<?php echo htmlspecialchars($today_sekki['読み']); ?>）
-                <?php endif; ?>
+                <a href="index.php">
+                    <?php if ($is_kou_today): ?>
+                        <strong><?php echo htmlspecialchars($today_kou['和名']); ?></strong>（<?php echo htmlspecialchars($today_kou['読み']); ?>）
+                    <?php else: ?>
+                        <strong><?php echo htmlspecialchars($today_sekki['節気名']); ?></strong>（<?php echo htmlspecialchars($today_sekki['読み']); ?>）
+                    <?php endif; ?>
+                </a>
             </p>
-            <a href="index.php" class="back-link">詳細を見る</a>
+
+            <div id="push-btn-area"></div>
         </div>
-        
-        <a href="index.php" class="back-link">トップページに戻る</a>
-        
+
+
         <?php foreach ($seasons as $season_name => $months): ?>
-        <table class="season-table">
-            <thead>
-                <tr>
-                    <th colspan="3" class="season-header <?php echo $season_name; ?>"><?php echo $season_name; ?></th>
-                </tr>
-                <tr class="month-row">
-                    <?php foreach ($months as $month): ?>
-                    <th><?php echo $month; ?>月</th>
-                    <?php endforeach; ?>
-                </tr>
-                <tr class="sekki-row">
-                    <?php foreach ($months as $month): ?>
-                    <th>
-                        <?php if (isset($sekki_by_month[$month])): ?>
-                            <?php foreach ($sekki_by_month[$month] as $sekki): ?>
-                                <div class="kou-item <?php echo ($current_month == $month && check_date_in_range($current_month, $current_day, $sekki['開始年月日'], $sekki['終了年月日'])) ? 'current' : ''; ?>">
-                                    <a href="index.php?type=sekki&idx=<?php echo array_search($sekki, $sekki_list); ?>"><?php echo htmlspecialchars($sekki['節気名']); ?></a>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </th>
-                    <?php endforeach; ?>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="kou-row">
-                    <?php foreach ($months as $month): ?>
-                    <td>
-                        <?php if (isset($sekki_by_month[$month])): ?>
-                            <?php foreach ($sekki_by_month[$month] as $sekki): ?>
-                                <?php $sekki_idx = array_search($sekki, $sekki_list); ?>
-                                <?php if (isset($kou_by_sekki[$sekki_idx])): ?>
-                                    <?php foreach ($kou_by_sekki[$sekki_idx] as $kou_info): ?>
-                                        <?php $kou = $kou_info['data']; $kou_idx = $kou_info['idx']; ?>
-                                        <div class="kou-item <?php echo ($current_month == $month && check_date_in_range($current_month, $current_day, $kou['開始年月日'], $kou['終了年月日'])) ? 'current' : ''; ?>">
-                                            <a href="index.php?type=kou&idx=<?php echo $kou_idx; ?>"><?php echo htmlspecialchars($kou['和名']); ?></a>
+            <table class="season-table">
+                <thead>
+                    <tr>
+                        <th colspan="3" class="season-header <?php echo $season_name; ?>"><?php echo $season_name; ?></th>
+                    </tr>
+                    <tr class="month-row">
+                        <?php foreach ($months as $month): ?>
+                            <th><?php echo $month; ?>月</th>
+                        <?php endforeach; ?>
+                    </tr>
+                    <tr class="sekki-row">
+                        <?php foreach ($months as $month): ?>
+                            <th>
+                                <?php if (isset($sekki_by_month[$month])): ?>
+                                    <?php foreach ($sekki_by_month[$month] as $sekki): ?>
+                                        <div class="kou-item <?php echo ($current_month == $month && check_date_in_range($current_month, $current_day, $sekki['開始年月日'], $sekki['終了年月日'])) ? 'current' : ''; ?>">
+                                            <a href="index.php?type=sekki&idx=<?php echo array_search($sekki, $sekki_list); ?>"><?php echo htmlspecialchars($sekki['節気名']); ?></a>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </td>
-                    <?php endforeach; ?>
-                </tr>
-            </tbody>
-        </table>
+                            </th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="kou-row">
+                        <?php foreach ($months as $month): ?>
+                            <td>
+                                <?php if (isset($sekki_by_month[$month])): ?>
+                                    <?php foreach ($sekki_by_month[$month] as $sekki): ?>
+                                        <?php $sekki_idx = array_search($sekki, $sekki_list); ?>
+                                        <?php if (isset($kou_by_sekki[$sekki_idx])): ?>
+                                            <?php foreach ($kou_by_sekki[$sekki_idx] as $kou_info): ?>
+                                                <?php $kou = $kou_info['data'];
+                                                $kou_idx = $kou_info['idx']; ?>
+                                                <div class="kou-item <?php echo ($current_month == $month && check_date_in_range($current_month, $current_day, $kou['開始年月日'], $kou['終了年月日'])) ? 'current' : ''; ?>">
+                                                    <a href="index.php?type=kou&idx=<?php echo $kou_idx; ?>"><?php echo htmlspecialchars($kou['和名']); ?></a>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </td>
+                        <?php endforeach; ?>
+                    </tr>
+                </tbody>
+            </table>
         <?php endforeach; ?>
-        
+
         <a href="index.php" class="back-link">トップページに戻る</a>
     </div>
-    
+
     <script>
-    // JavaScriptでの処理が必要な場合はここに記述
-    document.addEventListener('DOMContentLoaded', function() {
-        // URLからパラメータを取得
-        const urlParams = new URLSearchParams(window.location.search);
-        const fromType = urlParams.get('from');
-        const fromIdx = urlParams.get('idx');
-        
-        // 直前のページから特定の暦へのリンクがある場合
-        if (fromType && fromIdx) {
-            // 該当する暦へのリンクを探す
-            let targetLink = document.querySelector(`a[href="index.php?type=${fromType}&idx=${fromIdx}"]`);
-            
-            // type=パラメータがない場合も考慮
-            if (!targetLink) {
-                targetLink = document.querySelector(`a[href="index.php?idx=${fromIdx}"]`);
+        // JavaScriptでの処理が必要な場合はここに記述
+        document.addEventListener('DOMContentLoaded', function() {
+            // URLからパラメータを取得
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromType = urlParams.get('from');
+            const fromIdx = urlParams.get('idx');
+
+            // 直前のページから特定の暦へのリンクがある場合
+            if (fromType && fromIdx) {
+                // 該当する暦へのリンクを探す
+                let targetLink = document.querySelector(`a[href="index.php?type=${fromType}&idx=${fromIdx}"]`);
+
+                // type=パラメータがない場合も考慮
+                if (!targetLink) {
+                    targetLink = document.querySelector(`a[href="index.php?idx=${fromIdx}"]`);
+                }
+
+                // 見つかった場合はその要素にスクロール
+                if (targetLink) {
+                    // targetLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return; // スクロール処理を終了
+                }
             }
-            
-            // 見つかった場合はその要素にスクロール
-            if (targetLink) {
-                // targetLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return; // スクロール処理を終了
-            }
-        }
-        
-        // パラメータがない場合や該当する要素が見つからない場合は、今日の暦にスクロール
-        const currentElements = document.querySelectorAll('.current');
-        if (currentElements.length > 0) {
-            currentElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    });
-    
-    // サービスワーカーの登録
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('./service-worker.js', {scope: './'})  // スコープを明示的に指定
-                .then(function(registration) {
-                    console.log('ServiceWorker登録成功: ', registration.scope);
-                })
-                .catch(function(error) {
-                    console.log('ServiceWorker登録失敗: ', error);
+
+            // パラメータがない場合や該当する要素が見つからない場合は、今日の暦にスクロール
+            const currentElements = document.querySelectorAll('.current');
+            if (currentElements.length > 0) {
+                currentElements[0].scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
                 });
+            }
         });
-    }
-    
-    // PWAインストールバナーの表示をデバッグ
-    window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('beforeinstallpromptイベントが発生しました');
-        // イベントを保存しておく
-        window.deferredPrompt = e;
-    });
+
+        // サービスワーカーの登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./service-worker.js', {
+                        scope: './'
+                    }) // スコープを明示的に指定
+                    .then(function(registration) {
+                        console.log('ServiceWorker登録成功: ', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker登録失敗: ', error);
+                    });
+            });
+        }
+
+        // PWAインストールバナーの表示をデバッグ
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallpromptイベントが発生しました');
+            // イベントを保存しておく
+            window.deferredPrompt = e;
+        });
     </script>
+
+    <script src="js/app.js"></script>
 </body>
+
 </html>

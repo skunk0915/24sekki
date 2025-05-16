@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'push-subscribe-btn';
-    btn.textContent = 'プッシュ通知を有効化';
+    btn.textContent = '暦が変わったら通知する';
     // ここを修正
     const area = document.getElementById('push-btn-area');
     if (area) {

@@ -54,7 +54,6 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     $next_link = "index.php?idx=" . array_search($next_kou, $kou_list);
     $current_type = 'kou';
 } else {
-    echo "<!--";var_dump('20ee',$mei_count);echo "-->";
     // 今日の候と節気を取得
     $today_kou = get_today_kou($kou_list);
     $today_sekki = get_today_sekki($sekki_list);
@@ -162,7 +161,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                         echo $start_date . '～' . $end_date;
                         ?></p>
                 </div>
-                <div id="push-btn-area"></div>
+                
 
                 <?php
                 // 二十四節気表示時に、その節気に含まれる七十二候をリスト表示
@@ -198,11 +197,11 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
             <?php if (isset($prev_link) && isset($next_link)): ?>
                 <div class="navigation">
                     <a href="<?php echo $prev_link; ?>" class="nav-button prev-button"><?php echo $current_type === 'kou' ? htmlspecialchars($prev_kou['和名']) : htmlspecialchars($prev_sekki['節気名']); ?></a>
-                    <a href="calendar.php?from=<?php echo $current_type; ?>&idx=<?php echo $idx; ?>" class="calendar-button">暦一覧</a>
+                    <a href="calendar.php?from=<?php echo $current_type; ?>&idx=<?php echo $idx; ?>" class="calendar-button">こよみ一覧</a>
                     <a href="<?php echo $next_link; ?>" class="nav-button next-button"><?php echo $current_type === 'kou' ? htmlspecialchars($next_kou['和名']) : htmlspecialchars($next_sekki['節気名']); ?></a>
                 </div>
             <?php else: ?>
-                <a href="calendar.php" class="calendar-button">暦カレンダーを見る</a>
+                <a href="calendar.php" class="calendar-button">こよみ一覧を見る</a>
             <?php endif; ?>
 
         </div>
@@ -231,7 +230,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                 window.deferredPrompt = e;
             });
         </script>
-        <script src="js/app.js"></script>
+        
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koyomi-cache-v2'; // バージョン更新
+const CACHE_NAME = 'koyomi-cache-v3'; // バージョン更新
 const urlsToCache = [
   './',
   './index.php',
@@ -106,7 +106,7 @@ self.addEventListener('push', function (event) {
   try {
     data = event.data.json();
   } catch (e) {
-    data = { title: '通知', body: '新しいお知らせがあります' };
+    data = { title: '通知', body: '暦が変わりました' };
   }
   event.waitUntil(
     self.registration.showNotification(data.title, {
