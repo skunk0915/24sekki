@@ -2,27 +2,74 @@
 const publicVapidKey = 'BD6V2tlGjASgOHE4p-I9ndImCi-E9Ii62eHu0ugfg5kt0ufuIPyJYmOCKJz8095OxPlEFHOtntQ2EKHesq83AfI';
 
 async function subscribeUser() {
+  console.log('subscribeUser関数が呼び出されました');
   if ('serviceWorker' in navigator && 'PushManager' in window) {
-    const registration = await navigator.serviceWorker.register('./service-worker.js');
+    try {
+      console.log('ServiceWorkerの登録を開始します');
+      const registration = await navigator.serviceWorker.register('./service-worker.js');
+      console.log('ServiceWorkerの登録が完了しました', registration);
 
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      alert('通知を許可してください');
-      return;
+      console.log('通知の許可を要求します');
+      const permission = await Notification.requestPermission();
+      console.log('通知の許可状態:', permission);
+      if (permission !== 'granted') {
+        alert('通知を許可してください');
+        return;
+      }
+
+      console.log('プッシュマネージャーの購読を開始します');
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+      });
+      console.log('購読情報:', subscription);
+
+      // PHPに購読情報を送信
+      console.log('購読情報をサーバーに送信します');
+      const response = await fetch('./subscribe.php', {
+        method: 'POST',
+        body: JSON.stringify(subscription),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const responseData = await response.json();
+      console.log('サーバーからの応答:', responseData);
+      alert('プッシュ通知の購読が完了しました');
+
+      // テスト通知を送信するためのリクエスト
+      console.log('テスト通知をリクエストします');
+      try {
+        // 即時テスト通知を使用する方法に変更
+        console.log('即時テスト通知をリクエストします');
+        
+        // GETリクエストでテスト通知を送信
+        const testUrl = 'https://putsushiyutong-zhi-yong.onrender.com/send';
+        console.log('テスト通知URL:', testUrl);
+        
+        const testResponse = await fetch(testUrl);
+        console.log('テスト通知のレスポンスステータス:', testResponse.status);
+        
+        if (!testResponse.ok) {
+          throw new Error(`テスト通知リクエストエラー: ${testResponse.status} ${testResponse.statusText}`);
+        }
+        
+        const testResult = await testResponse.text();
+        console.log('テスト通知の結果:', testResult);
+        alert('テスト通知を送信しました');
+      } catch (testError) {
+        console.error('テスト通知の送信に失敗しました:', testError);
+        console.error('エラーの詳細:', {
+          name: testError.name,
+          message: testError.message,
+          stack: testError.stack
+        });
+        // エラーが発生しても通知購読自体は成功しているのでユーザーには通知しない
+      }
+    } catch (error) {
+      console.error('購読処理中にエラーが発生しました:', error);
+      alert('購読処理中にエラーが発生しました: ' + error.message);
     }
-
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-    });
-
-    // PHPに購読情報を送信
-    await fetch('./subscribe.php', {
-      method: 'POST',
-      body: JSON.stringify(subscription),
-      headers: { 'Content-Type': 'application/json' },
-    });
-    alert('プッシュ通知の購読が完了しました');
+  } else {
+    console.error('このブラウザはプッシュ通知に対応していません');
   }
 }
 

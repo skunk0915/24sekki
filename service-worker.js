@@ -77,13 +77,21 @@ self.addEventListener('fetch', function(event) {
               return response;
             }
 
-            // レスポンスを複製（レスポンスは一度しか使用できないため）
-            var responseToCache = response.clone();
+            try {
+              // レスポンスを複製（レスポンスは一度しか使用できないため）
+              var responseToCache = response.clone();
 
-            caches.open(CACHE_NAME)
-              .then(function(cache) {
-                cache.put(event.request, responseToCache);
-              });
+              caches.open(CACHE_NAME)
+                .then(function(cache) {
+                  try {
+                    cache.put(event.request, responseToCache);
+                  } catch (cacheError) {
+                    console.error('キャッシュ保存エラー:', cacheError);
+                  }
+                });
+            } catch (cloneError) {
+              console.error('レスポンス複製エラー:', cloneError);
+            }
 
             return response;
           }
