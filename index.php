@@ -1,9 +1,15 @@
 <?php
 // 共通関数を読み込み
 require_once 'functions.php';
+// スプレッドシートからデータを取得する関数を読み込み
+require_once 'get_spreadsheet_data.php';
 
 $kou_list = load_kou_data('72kou.csv');
 $sekki_list = load_sekki_data('24sekki.csv');
+
+// スプレッドシートからコラム解説データを取得
+$spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1XwNR5IxzWG3Z2AGUnifdjWZk1LWQWVnpfzNzEoPxSzw/edit?usp=sharing';
+$column_data = get_spreadsheet_data($spreadsheet_url);
 
 // GETパラメータでタイプとidxが指定されていれば、その候または節気を表示
 // 指定がなければ今日の候を優先表示
@@ -109,6 +115,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/column-style.css">
     <!-- PWA対応 -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="transparent">
@@ -192,6 +199,84 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                 ?>
             </p>
 
+            <?php
+            // スプレッドシートから取得したコラム解説を表示
+            if ($current_type === 'kou') {
+                // 現在表示している候の名前を取得
+                $current_kou_name = $display_kou['和名'];
+                
+                // この候に一致するコラム解説を取得（スプレッドシートのA列を参照）
+                $related_columns = [];
+                foreach ($column_data as $column) {
+                    if (isset($column['時期']) && $column['時期'] === $current_kou_name) {
+                        $related_columns[] = $column;
+                    }
+                }
+                
+                // 関連するコラム解説があれば表示
+                if (!empty($related_columns)) {
+                    echo '<div class="column-section">';
+                    echo '<h3 class="column-title">季節のことば</h3>';
+                    
+                    foreach ($related_columns as $column) {
+                        echo '<div class="column-item">';
+                        if (isset($column['語句']) && !empty($column['語句'])) {
+                            echo '<h4 class="column-term">' . htmlspecialchars($column['語句']);
+                            if (isset($column['語句（読み）']) && !empty($column['語句（読み）'])) {
+                                echo ' <span class="column-reading">（' . htmlspecialchars($column['語句（読み）']) . '）</span>';
+                            }
+                            echo '</h4>';
+                        }
+                        if (isset($column['解説']) && !empty($column['解説'])) {
+                            $column_text = htmlspecialchars($column['解説']);
+                            // 句点（。）の後に<br>タグを追加
+                            $column_text = str_replace('。', '。<br>', $column_text);
+                            echo '<p class="column-description">' . $column_text . '</p>';
+                        }
+                        echo '</div>';
+                    }
+                    
+                    echo '</div>';
+                }
+            } elseif ($current_type === 'sekki') {
+                // 節気の場合は、その節気名に一致するコラム解説のみを表示
+                $current_sekki_name = $display_kou['節気名'];
+                
+                // この節気に一致するコラム解説を取得（スプレッドシートのA列を参照）
+                $related_columns = [];
+                foreach ($column_data as $column) {
+                    if (isset($column['時期']) && $column['時期'] === $current_sekki_name) {
+                        $related_columns[] = $column;
+                    }
+                }
+                
+                // 関連するコラム解説があれば表示
+                if (!empty($related_columns)) {
+                    echo '<div class="column-section">';
+                    echo '<h3 class="column-title">季節のことば</h3>';
+                    
+                    foreach ($related_columns as $column) {
+                        echo '<div class="column-item">';
+                        if (isset($column['語句']) && !empty($column['語句'])) {
+                            echo '<h4 class="column-term">' . htmlspecialchars($column['語句']);
+                            if (isset($column['語句（読み）']) && !empty($column['語句（読み）'])) {
+                                echo ' <span class="column-reading">（' . htmlspecialchars($column['語句（読み）']) . '）</span>';
+                            }
+                            echo '</h4>';
+                        }
+                        if (isset($column['解説']) && !empty($column['解説'])) {
+                            $column_text = htmlspecialchars($column['解説']);
+                            // 句点（。）の後に<br>タグを追加
+                            $column_text = str_replace('。', '。<br>', $column_text);
+                            echo '<p class="column-description">' . $column_text . '</p>';
+                        }
+                        echo '</div>';
+                    }
+                    
+                    echo '</div>';
+                }
+            }
+            ?>
 
 
             <?php if (isset($prev_link) && isset($next_link)): ?>

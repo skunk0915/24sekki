@@ -13,6 +13,7 @@ body {
     overflow: hidden;
     height: 100vh;
     width: 100vw;
+    font-size: 18px;
 }
 
 .background {
@@ -198,7 +199,6 @@ body {
 }
 
 .description {
-    font-size: 1.125rem;
     line-height: 2.5;
     letter-spacing: 0.05em;
     white-space: pre-line;
