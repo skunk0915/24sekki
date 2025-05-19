@@ -299,6 +299,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
 
         </div>
 
+        <script src="js/horizon-scroll.js"></script>
         <script src="js/scripts.js"></script>
         <script>
             // サービスワーカーの登録
