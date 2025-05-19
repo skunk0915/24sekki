@@ -221,11 +221,15 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                     foreach ($related_columns as $column) {
                         echo '<div class="column-item">';
                         if (isset($column['語句']) && !empty($column['語句'])) {
-                            echo '<h4 class="column-term">' . htmlspecialchars($column['語句']);
-                            if (isset($column['語句（読み）']) && !empty($column['語句（読み）'])) {
-                                echo ' <span class="column-reading">（' . htmlspecialchars($column['語句（読み）']) . '）</span>';
+                            $term = htmlspecialchars($column['語句']);
+                            $reading = isset($column['語句（読み）']) && !empty($column['語句（読み）']) ? htmlspecialchars($column['語句（読み）']) : '';
+                            
+                            // 語句とルビが全く同じ場合はルビを表示しない
+                            if ($reading !== '' && $term !== $reading) {
+                                echo '<h4 class="column-term"><ruby>' . $term . '<rt class="column-reading">' . $reading . '</rt></ruby></h4>';
+                            } else {
+                                echo '<h4 class="column-term">' . $term . '</h4>';
                             }
-                            echo '</h4>';
                         }
                         if (isset($column['解説']) && !empty($column['解説'])) {
                             $column_text = htmlspecialchars($column['解説']);
@@ -258,11 +262,15 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                     foreach ($related_columns as $column) {
                         echo '<div class="column-item">';
                         if (isset($column['語句']) && !empty($column['語句'])) {
-                            echo '<h4 class="column-term">' . htmlspecialchars($column['語句']);
-                            if (isset($column['語句（読み）']) && !empty($column['語句（読み）'])) {
-                                echo ' <span class="column-reading">（' . htmlspecialchars($column['語句（読み）']) . '）</span>';
+                            $term = htmlspecialchars($column['語句']);
+                            $reading = isset($column['語句（読み）']) && !empty($column['語句（読み）']) ? htmlspecialchars($column['語句（読み）']) : '';
+                            
+                            // 語句とルビが全く同じ場合はルビを表示しない
+                            if ($reading !== '' && $term !== $reading) {
+                                echo '<h4 class="column-term"><ruby>' . $term . '<rt class="column-reading">' . $reading . '</rt></ruby></h4>';
+                            } else {
+                                echo '<h4 class="column-term">' . $term . '</h4>';
                             }
-                            echo '</h4>';
                         }
                         if (isset($column['解説']) && !empty($column['解説'])) {
                             $column_text = htmlspecialchars($column['解説']);
