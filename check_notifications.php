@@ -147,8 +147,7 @@ foreach ($subscriptions as $subscription) {
         logMessage("通知時刻 {$notifyTime} の5分前です。プッシュサーバーを起動します。");
         
         // render.comのプッシュサーバーを起動するリクエストを送信
-        // /testエンドポイントを使用（既に存在するエンドポイント）
-        $pushServerUrl = 'https://putsushiyutong-zhi-yong.onrender.com/test';
+        $pushServerUrl = 'https://putsushiyutong-zhi-yong.onrender.com/wake';
         $ch = curl_init($pushServerUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
