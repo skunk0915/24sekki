@@ -1,5 +1,5 @@
 // PWAのPush通知購読登録用スクリプト
-const publicVapidKey = 'BD6V2tlGjASgOHE4p-I9ndImCi-E9Ii62eHu0ugfg5kt0ufuIPyJYmOCKJz8095OxPlEFHOtntQ2EKHesq83AfI';
+const publicVapidKey = PUSH_CONFIG.VAPID_PUBLIC_KEY;
 
 async function subscribeUser() {
   console.log('subscribeUser関数が呼び出されました');
@@ -66,7 +66,7 @@ async function subscribeUser() {
         console.log('即時テスト通知をリクエストします');
         
         // GETリクエストでテスト通知を送信
-        const testUrl = 'https://putsushiyutong-zhi-yong.onrender.com/send';
+        const testUrl = PUSH_CONFIG.ENDPOINTS.SEND;
         console.log('テスト通知URL:', testUrl);
         
         const testResponse = await fetch(testUrl);

@@ -4,6 +4,9 @@
  * cronで定期的に実行する（例：5分ごと）
  */
 
+require_once 'functions.php';
+require_once 'config.php';
+
 // HTTPリクエストからの実行時のセキュリティチェック
 if (php_sapi_name() !== 'cli') {
     // コマンドラインからの実行ではない場合
@@ -40,36 +43,30 @@ $isTestMode = ($today === $testDate);
 
 // 節気データを読み込む
 function loadSekkiData() {
-    $sekkiFile = __DIR__ . '/24sekki.csv';
-    $kouFile = __DIR__ . '/72kou.csv';
     $sekkiData = [];
     
     // 二十四節気のデータを読み込む
-    if (($handle = fopen($sekkiFile, 'r')) !== false) {
-        while (($data = fgetcsv($handle)) !== false) {
-            if (isset($data[2]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $data[2])) {
-                $sekkiData[$data[2]] = [
-                    'type' => '二十四節気',
-                    'name' => $data[0],
-                    'reading' => $data[1]
-                ];
-            }
+    $sekki_list = load_sekki_data('24sekki.csv');
+    foreach ($sekki_list as $sekki) {
+        if (isset($sekki['開始年月日']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $sekki['開始年月日'])) {
+            $sekkiData[$sekki['開始年月日']] = [
+                'type' => '二十四節気',
+                'name' => $sekki['節気名'],
+                'reading' => $sekki['読み']
+            ];
         }
-        fclose($handle);
     }
     
     // 七十二候のデータを読み込む
-    if (($handle = fopen($kouFile, 'r')) !== false) {
-        while (($data = fgetcsv($handle)) !== false) {
-            if (isset($data[3]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $data[3])) {
-                $sekkiData[$data[3]] = [
-                    'type' => '七十二候',
-                    'name' => $data[0],
-                    'reading' => $data[2]
-                ];
-            }
+    $kou_list = load_kou_data('72kou.csv');
+    foreach ($kou_list as $kou) {
+        if (isset($kou['開始年月日']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $kou['開始年月日'])) {
+            $sekkiData[$kou['開始年月日']] = [
+                'type' => '七十二候',
+                'name' => $kou['和名'],
+                'reading' => $kou['読み']
+            ];
         }
-        fclose($handle);
     }
     
     return $sekkiData;
@@ -147,7 +144,7 @@ foreach ($subscriptions as $subscription) {
         logMessage("通知時刻 {$notifyTime} の5分前です。プッシュサーバーを起動します。");
         
         // render.comのプッシュサーバーを起動するリクエストを送信
-        $pushServerUrl = 'https://putsushiyutong-zhi-yong.onrender.com/wake';
+        $pushServerUrl = PUSH_SERVER_WAKE_ENDPOINT;
         $ch = curl_init($pushServerUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
@@ -180,7 +177,7 @@ foreach ($subscriptions as $subscription) {
         }
         
         // 通知送信リクエスト
-        $notifyUrl = 'https://putsushiyutong-zhi-yong.onrender.com/notify';
+        $notifyUrl = PUSH_SERVER_NOTIFY_ENDPOINT;
         $postData = json_encode([
             'title' => $title,
             'body' => $body,

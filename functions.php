@@ -55,41 +55,12 @@ function load_sekki_data($csv_file) {
  * @return array 今日の候
  */
 function get_today_kou($kou_list) {
-    // 月と日を別々に取得して数値比較を行う
     $month = (int)date('n');
     $day = (int)date('j');
     
     foreach ($kou_list as $kou) {
-        // 開始日と終了日を分解
-        list($start_month, $start_day) = explode('/', $kou['開始年月日']);
-        list($end_month, $end_day) = explode('/', $kou['終了年月日']);
-        
-        // 数値として比較
-        $start_month = (int)$start_month;
-        $start_day = (int)$start_day;
-        $end_month = (int)$end_month;
-        $end_day = (int)$end_day;
-        
-        // 月が同じ場合は日だけで比較
-        if ($month == $start_month && $month == $end_month) {
-            if ($day >= $start_day && $day <= $end_day) {
-                return $kou;
-            }
-        }
-        // 開始月と終了月が異なる場合
-        elseif ($start_month != $end_month) {
-            // 現在の月が開始月で、日が開始日以上
-            if ($month == $start_month && $day >= $start_day) {
-                return $kou;
-            }
-            // 現在の月が終了月で、日が終了日以下
-            elseif ($month == $end_month && $day <= $end_day) {
-                return $kou;
-            }
-            // 現在の月が開始月と終了月の間
-            elseif ($month > $start_month && $month < $end_month) {
-                return $kou;
-            }
+        if (check_date_in_range($month, $day, $kou['開始年月日'], $kou['終了年月日'])) {
+            return $kou;
         }
     }
     
@@ -107,41 +78,12 @@ function get_today_kou($kou_list) {
  * @return array 今日の節気
  */
 function get_today_sekki($sekki_list) {
-    // 月と日を別々に取得して数値比較を行う
     $month = (int)date('n');
     $day = (int)date('j');
     
     foreach ($sekki_list as $sekki) {
-        // 開始日と終了日を分解
-        list($start_month, $start_day) = explode('/', $sekki['開始年月日']);
-        list($end_month, $end_day) = explode('/', $sekki['終了年月日']);
-        
-        // 数値として比較
-        $start_month = (int)$start_month;
-        $start_day = (int)$start_day;
-        $end_month = (int)$end_month;
-        $end_day = (int)$end_day;
-        
-        // 月が同じ場合は日だけで比較
-        if ($month == $start_month && $month == $end_month) {
-            if ($day >= $start_day && $day <= $end_day) {
-                return $sekki;
-            }
-        }
-        // 開始月と終了月が異なる場合
-        elseif ($start_month != $end_month) {
-            // 現在の月が開始月で、日が開始日以上
-            if ($month == $start_month && $day >= $start_day) {
-                return $sekki;
-            }
-            // 現在の月が終了月で、日が終了日以下
-            elseif ($month == $end_month && $day <= $end_day) {
-                return $sekki;
-            }
-            // 現在の月が開始月と終了月の間
-            elseif ($month > $start_month && $month < $end_month) {
-                return $sekki;
-            }
+        if (check_date_in_range($month, $day, $sekki['開始年月日'], $sekki['終了年月日'])) {
+            return $sekki;
         }
     }
     
