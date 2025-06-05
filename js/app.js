@@ -24,11 +24,15 @@ async function subscribeUser() {
       });
       console.log('購読情報:', subscription);
 
-      // PHPに購読情報を送信
-      console.log('購読情報をサーバーに送信します');
+      // 時刻入力値も一緒に送信
+      const timeInput = document.getElementById('push-time-input');
+      const notifyTime = timeInput ? timeInput.value : '';
+      // PHPに購読情報＋時刻を送信
+      const sendData = Object.assign({}, subscription, {notifyTime});
+      console.log('購読情報をサーバーに送信します', sendData);
       const response = await fetch('./subscribe.php', {
         method: 'POST',
-        body: JSON.stringify(subscription),
+        body: JSON.stringify(sendData),
         headers: { 'Content-Type': 'application/json' },
       });
       const responseData = await response.json();
@@ -84,14 +88,22 @@ function urlBase64ToUint8Array(base64String) {
 document.addEventListener('DOMContentLoaded', () => {
   if (!('serviceWorker' in navigator && 'PushManager' in window)) return;
   let btn = document.getElementById('push-subscribe-btn');
+  let timeInput = document.getElementById('push-time-input');
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'push-subscribe-btn';
-    // 初期テキストは後でセット
+    // 時刻入力欄を作成
+    timeInput = document.createElement('input');
+    timeInput.type = 'time';
+    timeInput.id = 'push-time-input';
+    timeInput.value = '08:00'; // デフォルト値
+    timeInput.style.marginRight = '8px';
     const area = document.getElementById('push-btn-area');
     if (area) {
+      area.appendChild(timeInput);
       area.appendChild(btn);
     } else {
+      document.body.appendChild(timeInput);
       document.body.appendChild(btn);
     }
   }
@@ -101,22 +113,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function updatePushBtnText() {
   const btn = document.getElementById('push-subscribe-btn');
-  if (!btn) return;
+  const timeInput = document.getElementById('push-time-input');
+  if (!btn || !timeInput) return;
   if (!('serviceWorker' in navigator && 'PushManager' in window)) {
     btn.textContent = 'プッシュ非対応';
     btn.disabled = true;
+    timeInput.disabled = true;
     return;
   }
   const registration = await navigator.serviceWorker.getRegistration();
   if (!registration) {
     btn.textContent = '暦が変わったら通知する';
+    btn.disabled = false;
+    timeInput.disabled = false;
     return;
   }
   const subscription = await registration.pushManager.getSubscription();
   if (subscription) {
     btn.textContent = '暦が変わっても通知しない';
+    btn.disabled = false;
+    timeInput.disabled = true; // ON時は時刻変更不可
   } else {
     btn.textContent = '暦が変わったら通知する';
+    btn.disabled = false;
+    timeInput.disabled = false;
   }
 }
 

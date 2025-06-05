@@ -1,0 +1,5 @@
+{
+  "notificationHour": 3,
+  "notificationMinute": 10,
+  "activationMinutesBefore": 5
+}

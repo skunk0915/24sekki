@@ -379,6 +379,41 @@ app.get('/test', (req, res) => {
   });
 });
 
+// サーバー起動用エンドポイント（通知の5分前に呼び出される）
+app.get('/wake', (req, res) => {
+  console.log('サーバー起動リクエストを受信しました:', new Date().toLocaleString());
+  res.json({
+    status: 'ok',
+    message: 'サーバーが起動しました',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 指定された購読者に通知を送信するエンドポイント
+app.post('/notify', async (req, res) => {
+  try {
+    console.log('個別通知リクエストを受信しました:', req.body);
+    const { title, body, subscription } = req.body;
+    
+    if (!subscription) {
+      return res.status(400).json({ error: '購読情報が必要です' });
+    }
+    
+    const payload = JSON.stringify({
+      title: title || 'プッシュ通知',
+      body: body || '通知内容'
+    });
+    
+    console.log('通知を送信します:', { title, body });
+    await webpush.sendNotification(subscription, payload);
+    
+    return res.status(200).json({ success: true, message: '通知送信完了' });
+  } catch (err) {
+    console.error('通知送信エラー:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ルートエンドポイント
 app.get('/', (req, res) => {
   res.json({
@@ -387,6 +422,8 @@ app.get('/', (req, res) => {
     endpoints: [
       '/test',
       '/send',
+      '/wake',
+      '/notify',
       '/check-subscriptions',
       '/test-notification-now',
       '/test-next-sekki',

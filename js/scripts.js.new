@@ -1,0 +1,308 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // プッシュ通知関連の処理
+    const pushBtnArea = document.getElementById('push-btn-area');
+    const notificationTimeSettings = document.getElementById('notification-time-settings');
+    
+    // プッシュ通知が許可されているかチェック
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        // Service Workerが利用可能
+        navigator.serviceWorker.ready.then(function(registration) {
+            // 設定ボタンを追加
+            const settingsButton = document.createElement('button');
+            settingsButton.textContent = '通知時間を設定';
+            settingsButton.className = 'settings-button';
+            settingsButton.addEventListener('click', function() {
+                // 設定パネルの表示切替
+                if (notificationTimeSettings.style.display === 'none') {
+                    notificationTimeSettings.style.display = 'block';
+                    // 現在の設定を取得
+                    fetchCurrentSettings();
+                } else {
+                    notificationTimeSettings.style.display = 'none';
+                }
+            });
+            
+            // 設定ボタンを追加
+            pushBtnArea.appendChild(settingsButton);
+            
+            // 通知設定保存ボタンのイベントリスナー
+            const saveButton = document.getElementById('save-notification-time');
+            if (saveButton) {
+                saveButton.addEventListener('click', saveNotificationTime);
+            }
+        });
+    }
+    
+    // サーバーURLを定義
+    // iOSではlocalhostが使えない場合があるのでIPアドレスも試す
+    let serverUrl = 'http://localhost:3000';
+    
+    // デバイスの情報を取得
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isPWA = window.navigator.standalone === true;
+    
+    // デバイスによって適切なURLを選択
+    function getServerUrl() {
+        // iOSのSafariやPWAではlocalhostが使えない場合がある
+        if (isIOS) {
+            console.log('iOSデバイスを検出しました');
+            // PWAやiOSの場合は実際IPアドレスを使用
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                return 'http://localhost:3000';
+            } else {
+                return window.location.protocol + '//' + hostname + ':3000';
+            }
+        }
+        
+        return 'http://localhost:3000';
+    }
+    
+    // サーバーURLを設定
+    serverUrl = getServerUrl();
+    console.log('使用するサーバーURL:', serverUrl);
+    
+    // XHRを使用してリクエストを送信する関数
+    function sendXhrRequest(url, method, data, callback) {
+        console.log(`XHRリクエストを送信: ${method} ${url}`);
+        
+        const xhr = new XMLHttpRequest();
+        xhr.open(method, url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.timeout = 10000; // 10秒タイムアウト
+        
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                let responseData;
+                try {
+                    responseData = JSON.parse(xhr.responseText);
+                } catch (e) {
+                    console.error('JSONパースエラー:', e);
+                    responseData = { status: 'error', message: 'JSONパースエラー' };
+                }
+                callback(null, responseData);
+            } else {
+                callback(new Error(`サーバーエラー: ${xhr.status}`), null);
+            }
+        };
+        
+        xhr.onerror = function() {
+            callback(new Error('ネットワークエラー'), null);
+        };
+        
+        xhr.ontimeout = function() {
+            callback(new Error('タイムアウト'), null);
+        };
+        
+        if (data && method !== 'GET') {
+            xhr.send(JSON.stringify(data));
+        } else {
+            xhr.send();
+        }
+    }
+    
+    // タイムアウト付きフェッチ関数
+    async function fetchWithTimeout(url, options, timeout = 5000) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+    }
+    
+    // デフォルトの通知時間を設定する関数
+    function setDefaultNotificationTime() {
+        // デフォルト値（6時40分）
+        const defaultHour = 6;
+        const defaultMinute = 40;
+        
+        const hourSelect = document.getElementById('notification-hour');
+        const minuteSelect = document.getElementById('notification-minute');
+        
+        if (hourSelect && minuteSelect) {
+            // セレクトボックスに値を設定
+            for (let i = 0; i < hourSelect.options.length; i++) {
+                if (parseInt(hourSelect.options[i].value) === defaultHour) {
+                    hourSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            for (let i = 0; i < minuteSelect.options.length; i++) {
+                if (parseInt(minuteSelect.options[i].value) === defaultMinute) {
+                    minuteSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            console.log(`デフォルトの通知時間を設定しました: ${defaultHour}時${defaultMinute}分`);
+        }
+    }
+    
+    // 現在の設定を取得する関数
+    function fetchCurrentSettings() {
+        const statusElement = document.getElementById('notification-time-status');
+        statusElement.textContent = '設定を取得中...';
+        
+        console.log('設定を取得しています...', serverUrl);
+        
+        // iOSでの動作を改善するために、まずデフォルト値を設定
+        setDefaultNotificationTime();
+        
+        // iOSではXHRを使用し、それ以外ではfetchを使用
+        if (isIOS) {
+            // XHRを使用してリクエストを送信
+            sendXhrRequest(`${serverUrl}/debug-info`, 'GET', null, (error, data) => {
+                if (error) {
+                    console.error('設定取得エラー (XHR):', error);
+                    statusElement.textContent = `設定の取得に失敗しました。サーバーが起動しているか確認してください。(${error.message})`;
+                    return;
+                }
+                
+                // 設定値をフォームに反映
+                updateNotificationTimeForm(data);
+                statusElement.textContent = '';
+            });
+        } else {
+            // 非iOSデバイスではfetchを使用
+            fetchWithTimeout(`${serverUrl}/debug-info`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                mode: 'cors',
+                cache: 'no-cache'
+            }, 10000)
+            .then(response => {
+                console.log('サーバーからのレスポンス:', response.status, response.type);
+                
+                if (response.type === 'opaque' || response.type === 'error') {
+                    throw new Error('レスポンスが不透明またはエラーです');
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`サーバーからのエラーレスポンス: ${response.status}`);
+                }
+                
+                return response.json();
+            })
+            .then(data => updateNotificationTimeForm(data))
+            .catch(error => {
+                console.error('設定取得エラー (fetch):', error);
+                statusElement.textContent = `設定の取得に失敗しました。サーバーが起動しているか確認してください。(${error.message})`;
+            });
+        }
+    }
+    
+    // 通知時間フォームを更新する関数
+    function updateNotificationTimeForm(data) {
+        const hourSelect = document.getElementById('notification-hour');
+        const minuteSelect = document.getElementById('notification-minute');
+        
+        if (data && data.sekkiInfo && data.sekkiInfo.cronSettings) {
+            const hour = parseInt(data.sekkiInfo.cronSettings.sekkiCheck.split(' ')[1]);
+            const minute = parseInt(data.sekkiInfo.cronSettings.sekkiCheck.split(' ')[0]);
+            
+            // セレクトボックスに値を設定
+            for (let i = 0; i < hourSelect.options.length; i++) {
+                if (parseInt(hourSelect.options[i].value) === hour) {
+                    hourSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            for (let i = 0; i < minuteSelect.options.length; i++) {
+                if (parseInt(minuteSelect.options[i].value) === minute) {
+                    minuteSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            console.log(`通知時間を設定しました: ${hour}時${minute}分`);
+        } else {
+            console.warn('サーバーからのレスポンスに設定情報が含まれていません');
+        }
+    }
+    
+    // 通知時間を保存する関数
+    function saveNotificationTime() {
+        const hourSelect = document.getElementById('notification-hour');
+        const minuteSelect = document.getElementById('notification-minute');
+        const statusElement = document.getElementById('notification-time-status');
+        
+        const hour = hourSelect.value;
+        const minute = minuteSelect.value;
+        
+        // ステータス表示をクリア
+        statusElement.textContent = '設定を保存中...';
+        
+        console.log('通知時間を保存しています:', hour, minute);
+        
+        // iOSでの動作を改善するための処理
+        if (isIOS) {
+            // XHRを使用してリクエストを送信
+            sendXhrRequest(`${serverUrl}/set-notification-time`, 'POST', { hour, minute }, (error, data) => {
+                if (error) {
+                    console.error('設定保存エラー (XHR):', error);
+                    statusElement.textContent = `サーバーとの通信に失敗しました。サーバーが起動しているか確認してください。(${error.message})`;
+                    return;
+                }
+                
+                // 成功メッセージを表示
+                statusElement.textContent = `通知時間を${hour}時${minute}分に設定しました。`;
+                setTimeout(() => {
+                    statusElement.textContent = '';
+                }, 3000);
+            });
+        } else {
+            // 非iOSデバイスではfetchを使用
+            fetchWithTimeout(`${serverUrl}/set-notification-time`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                mode: 'cors',
+                cache: 'no-cache',
+                body: JSON.stringify({ hour, minute })
+            }, 10000)
+            .then(response => {
+                console.log('サーバーからのレスポンス:', response.status, response.type);
+                
+                // レスポンスが不透明な場合は成功とみなす
+                if (response.type === 'opaque') {
+                    // 成功とみなして処理を続行
+                    statusElement.textContent = `通知時間を${hour}時${minute}分に設定しました。`;
+                    setTimeout(() => {
+                        statusElement.textContent = '';
+                    }, 3000);
+                    return { status: 'success' };
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`サーバーからのエラーレスポンス: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    statusElement.textContent = `通知時間を${hour}時${minute}分に設定しました。`;
+                    setTimeout(() => {
+                        statusElement.textContent = '';
+                    }, 3000);
+                } else {
+                    statusElement.textContent = `エラー: ${data.error || '不明なエラー'}`;
+                }
+            })
+            .catch(error => {
+                console.error('設定保存エラー (fetch):', error);
+                statusElement.textContent = `サーバーとの通信に失敗しました。サーバーが起動しているか確認してください。(${error.message})`;
+            });
+        }
+    }
+});
