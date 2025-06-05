@@ -96,15 +96,29 @@ if ($rawData) {
             if ($latestEndpoint) {
                 // 最新のエンドポイント情報に通知時刻を追加
                 $subscriptions[$latestIndex]['notifyTime'] = $data['notifyTime'];
+                if (isset($data['browserId'])) {
+                    $subscriptions[$latestIndex]['browserId'] = $data['browserId'];
+                }
                 logDebug("最新のエンドポイント情報に通知時刻を追加: {$data['notifyTime']}");
                 $updated = true;
             }
         }
         
-        // どのエンドポイントとも紐づけられなかった場合は、通知時刻のみのデータを追加
+        // どのエンドポイントとも紐づけられなかった場合は、ダミーのエンドポイントを作成
         if (!$updated) {
-            $subscriptions[] = ['notifyTime' => $data['notifyTime']];
-            logDebug("通知時刻のみのデータを追加（紐づけ先なし）: {$data['notifyTime']}");
+            // ダミーのエンドポイント情報を作成して通知時刻を紐づける
+            $dummySubscription = [
+                'endpoint' => 'dummy_endpoint_' . time(),
+                'notifyTime' => $data['notifyTime'],
+                'isDummy' => true
+            ];
+            
+            if (isset($data['browserId'])) {
+                $dummySubscription['browserId'] = $data['browserId'];
+            }
+            
+            $subscriptions[] = $dummySubscription;
+            logDebug("ダミーのエンドポイントを作成して通知時刻を紐づけ: {$data['notifyTime']}");
         }
     } else {
         logDebug("エンドポイントも通知時刻もないデータを受信");

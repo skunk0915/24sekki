@@ -110,7 +110,16 @@ if (file_exists($subscriptionsFile)) {
         
         // エンドポイントと通知時刻の両方がある購読情報
         if (isset($data['endpoint']) && isset($data['notifyTime'])) {
-            $subscriptions[] = $data;
+            // ダミーのエンドポイントかどうかチェック
+            if (isset($data['isDummy']) && $data['isDummy'] === true) {
+                // ダミーエンドポイントの場合は操作用の撮伺購読情報として扱う
+                $data['pseudo_subscription'] = true;
+                $subscriptions[] = $data;
+                $notifyTimes[] = $data['notifyTime']; // 通知時刻も記録
+            } else {
+                // 通常の購読情報
+                $subscriptions[] = $data;
+            }
         }
         // 通知時刻のみのエントリ
         elseif (isset($data['notifyTime']) && !isset($data['endpoint'])) {
