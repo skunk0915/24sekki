@@ -113,8 +113,9 @@ if ($rawData) {
         }
     } else {
         logDebug("エンドポイントも通知時刻もないデータを受信");
+        logDebug("受信データの詳細: " . print_r($data, true));
         http_response_code(400);
-        echo json_encode(["status" => "error", "message" => "no endpoint or notifyTime"]);
+        echo json_encode(["status" => "error", "message" => "no endpoint or notifyTime", "received_data" => $data]);
         exit;
     }
     
