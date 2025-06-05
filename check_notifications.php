@@ -182,6 +182,7 @@ foreach ($subscriptions as $subscription) {
         // エンドポイントが存在しない購読情報は通知を送信しない
         if (!isset($subscription['endpoint']) || empty($subscription['endpoint'])) {
             logMessage("通知時刻 {$notifyTime} の購読情報にエンドポイントがありません。通知をスキップします。");
+            logMessage("購読データの詳細: " . json_encode($subscription));
             continue;
         }
         
