@@ -182,6 +182,12 @@ foreach ($subscriptions as $subscription) {
             continue;
         }
         
+        // エンドポイントが存在しない購読情報は通知を送信しない
+        if (!isset($subscription['endpoint']) || empty($subscription['endpoint'])) {
+            logMessage("通知時刻 {$notifyTime} の購読情報にエンドポイントがありません。通知をスキップします。");
+            continue;
+        }
+        
         // 通知送信リクエスト
         $notifyUrl = 'https://putsushiyutong-zhi-yong.onrender.com/notify';
         $postData = json_encode([
