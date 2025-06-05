@@ -27,6 +27,13 @@ async function subscribeUser() {
       // 時刻入力値も一緒に送信
       const timeInput = document.getElementById('push-time-input');
       const notifyTime = timeInput ? timeInput.value : '';
+      
+      // 時刻をローカルストレージに保存
+      if (notifyTime) {
+        localStorage.setItem('notifyTime', notifyTime);
+        console.log('通知時刻を保存しました:', notifyTime);
+      }
+      
       // PHPに購読情報＋時刻を送信
       const sendData = Object.assign({}, subscription, {notifyTime});
       console.log('購読情報をサーバーに送信します', sendData);
@@ -85,10 +92,31 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 // ページロード時に購読登録ボタンを自動設置＆状態に応じて文言切替
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (!('serviceWorker' in navigator && 'PushManager' in window)) return;
   let btn = document.getElementById('push-subscribe-btn');
   let timeInput = document.getElementById('push-time-input');
+  
+  // 以前設定した通知時刻を取得
+  let savedTime = '08:00'; // デフォルト値
+  
+  // 現在の購読情報から時刻を取得する
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration) {
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        // ローカルストレージから時刻を取得
+        const storedTime = localStorage.getItem('notifyTime');
+        if (storedTime) {
+          savedTime = storedTime;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('時刻取得エラー:', error);
+  }
+  
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'push-subscribe-btn';
@@ -96,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     timeInput = document.createElement('input');
     timeInput.type = 'time';
     timeInput.id = 'push-time-input';
-    timeInput.value = '08:00'; // デフォルト値
+    timeInput.value = savedTime; // 保存された時刻またはデフォルト値
     timeInput.style.marginRight = '8px';
     const area = document.getElementById('push-btn-area');
     if (area) {
@@ -106,6 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(timeInput);
       document.body.appendChild(btn);
     }
+  } else if (timeInput) {
+    timeInput.value = savedTime; // 既存の時刻入力欄にも値を設定
   }
   updatePushBtnText();
   btn.onclick = togglePushSubscription;

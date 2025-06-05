@@ -102,7 +102,8 @@ if (file_exists($subscriptionsFile)) {
     $lines = file($subscriptionsFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         $subscription = json_decode($line, true);
-        if ($subscription && isset($subscription['notifyTime'])) {
+        // エンドポイントと通知時刻の両方がある購読情報のみ処理
+        if ($subscription && isset($subscription['endpoint']) && isset($subscription['notifyTime'])) {
             $subscriptions[] = $subscription;
         }
     }
@@ -128,7 +129,8 @@ foreach ($subscriptions as $subscription) {
         logMessage("通知時刻 {$notifyTime} の5分前です。プッシュサーバーを起動します。");
         
         // render.comのプッシュサーバーを起動するリクエストを送信
-        $pushServerUrl = 'https://putsushiyutong-zhi-yong.onrender.com/wake';
+        // 一時的に/testエンドポイントを使用（既に存在するエンドポイント）
+        $pushServerUrl = 'https://putsushiyutong-zhi-yong.onrender.com/test';
         $ch = curl_init($pushServerUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
