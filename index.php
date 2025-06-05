@@ -297,22 +297,9 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                 <a href="calendar.php" class="calendar-button">こよみ一覧を見る</a>
             <?php endif; ?>
 
-            <div id="push-btn-area" style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9;">
-                <h3>プッシュ通知設定</h3>
-                <p>節気の変更をお知らせします</p>
-                <div style="margin: 10px 0;">
-                    <label for="push-time-input">通知時刻: </label>
-                    <input type="time" id="push-time-input" value="08:00" style="margin-right: 10px;">
-                    <button id="push-subscribe-btn">通知をONにする</button>
-                </div>
-            </div>
-
         </div>
 
         <script src="js/horizon-scroll.js"></script>
-        <script src="js/config.js"></script>
-        <script src="js/scripts.js"></script>
-        <script src="js/app.js"></script>
         <script>
             // サービスワーカーの登録
             if ('serviceWorker' in navigator) {
