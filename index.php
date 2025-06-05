@@ -300,7 +300,6 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
         </div>
 
         <script src="js/horizon-scroll.js"></script>
-        <script src="js/config.js"></script>
         <script>
             // サービスワーカーの登録
             if ('serviceWorker' in navigator) {
