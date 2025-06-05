@@ -61,11 +61,51 @@ if ($rawData) {
             logDebug("新規購読情報を追加: " . json_encode($data));
         }
     } 
-    // エンドポイントがない場合は通知時刻のみのデータとして追加
+    // エンドポイントがない場合は通知時刻のみのデータとして処理
     elseif (isset($data['notifyTime'])) {
-        // 通知時刻のみのデータを追加
-        $subscriptions[] = ['notifyTime' => $data['notifyTime']];
-        logDebug("通知時刻のみのデータを追加: {$data['notifyTime']}");
+        // ブラウザIDがあれば、それを使用して同じブラウザの購読情報を探す
+        $browserId = $data['browserId'] ?? null;
+        $updated = false;
+        
+        if ($browserId) {
+            foreach ($subscriptions as &$subscription) {
+                if (isset($subscription['browserId']) && $subscription['browserId'] === $browserId) {
+                    // 同じブラウザIDの購読情報を更新
+                    $subscription['notifyTime'] = $data['notifyTime'];
+                    logDebug("ブラウザID {$browserId} の通知時刻を更新: {$data['notifyTime']}");
+                    $updated = true;
+                    break;
+                }
+            }
+        }
+        
+        // 最新のエンドポイント情報を探して通知時刻を更新
+        if (!$updated) {
+            $latestEndpoint = null;
+            $latestIndex = -1;
+            
+            // 最新のエンドポイント情報を持つ購読情報を探す
+            for ($i = count($subscriptions) - 1; $i >= 0; $i--) {
+                if (isset($subscriptions[$i]['endpoint'])) {
+                    $latestEndpoint = $subscriptions[$i];
+                    $latestIndex = $i;
+                    break;
+                }
+            }
+            
+            if ($latestEndpoint) {
+                // 最新のエンドポイント情報に通知時刻を追加
+                $subscriptions[$latestIndex]['notifyTime'] = $data['notifyTime'];
+                logDebug("最新のエンドポイント情報に通知時刻を追加: {$data['notifyTime']}");
+                $updated = true;
+            }
+        }
+        
+        // どのエンドポイントとも紐づけられなかった場合は、通知時刻のみのデータを追加
+        if (!$updated) {
+            $subscriptions[] = ['notifyTime' => $data['notifyTime']];
+            logDebug("通知時刻のみのデータを追加（紐づけ先なし）: {$data['notifyTime']}");
+        }
     } else {
         logDebug("エンドポイントも通知時刻もないデータを受信");
         http_response_code(400);

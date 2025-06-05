@@ -17,6 +17,16 @@ async function subscribeUser() {
         return;
       }
 
+      // ブラウザIDを生成または取得
+      let browserId = localStorage.getItem('browserId');
+      if (!browserId) {
+        browserId = 'browser_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('browserId', browserId);
+        console.log('新しいブラウザIDを生成しました:', browserId);
+      } else {
+        console.log('既存のブラウザIDを使用します:', browserId);
+      }
+
       console.log('プッシュマネージャーの購読を開始します');
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -34,8 +44,11 @@ async function subscribeUser() {
         console.log('通知時刻を保存しました:', notifyTime);
       }
       
-      // PHPに購読情報＋時刻を送信
-      const sendData = Object.assign({}, subscription, {notifyTime});
+      // PHPに購読情報＋時刻とブラウザIDを送信
+      const sendData = Object.assign({}, subscription, {
+        notifyTime,
+        browserId
+      });
       console.log('購読情報をサーバーに送信します', sendData);
       const response = await fetch('./subscribe.php', {
         method: 'POST',
@@ -96,6 +109,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!('serviceWorker' in navigator && 'PushManager' in window)) return;
   let btn = document.getElementById('push-subscribe-btn');
   let timeInput = document.getElementById('push-time-input');
+  
+  // ブラウザIDを生成または取得
+  let browserId = localStorage.getItem('browserId');
+  if (!browserId) {
+    browserId = 'browser_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('browserId', browserId);
+    console.log('新しいブラウザIDを生成しました:', browserId);
+  } else {
+    console.log('既存のブラウザIDを使用します:', browserId);
+  }
   
   // 以前設定した通知時刻を取得
   let savedTime = '08:00'; // デフォルト値
@@ -185,6 +208,43 @@ async function togglePushSubscription() {
   } else {
     await subscribeUser();
     await updatePushBtnText();
+  }
+  
+  // 通知時刻のみの変更の場合もサーバーに送信する
+  const timeInput = document.getElementById('push-time-input');
+  if (timeInput) {
+    const notifyTime = timeInput.value;
+    const savedTime = localStorage.getItem('notifyTime');
+    
+    // 時刻が変更されている場合はサーバーに送信
+    if (notifyTime !== savedTime) {
+      localStorage.setItem('notifyTime', notifyTime);
+      console.log('通知時刻を更新しました:', notifyTime);
+      
+      // ブラウザIDを取得
+      let browserId = localStorage.getItem('browserId');
+      if (!browserId) {
+        browserId = 'browser_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('browserId', browserId);
+      }
+      
+      // 最新のエンドポイント情報を取得して送信
+      let sendData = { notifyTime, browserId };
+      
+      if (subscription) {
+        sendData = Object.assign({}, subscription, sendData);
+      }
+      
+      console.log('通知時刻のみをサーバーに送信します', sendData);
+      fetch('./subscribe.php', {
+        method: 'POST',
+        body: JSON.stringify(sendData),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      .then(response => response.json())
+      .then(data => console.log('サーバーからの応答:', data))
+      .catch(error => console.error('時刻送信エラー:', error));
+    }
   }
 }
 
