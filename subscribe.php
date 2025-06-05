@@ -1,4 +1,9 @@
 <?php
+$sftp_host = 'mizy.sakura.ne.jp';
+$sftp_username = 'mizy';
+$sftp_password = 'CQgg_WkPXus2';
+$remote_path = '/home/mizy/www/72kou/subscriptions.txt';
+
 // デバッグログ用関数
 $debugLog = "subscribe_debug.log";
 function logDebug($message) {
@@ -134,6 +139,26 @@ if ($rawData) {
             fwrite($fp, json_encode($subscription) . "\n");
         }
         fclose($fp);
+        
+        $remoteUploadUrl = 'https://mizy.sakura.ne.jp/72kou/upload_subscriptions.php';
+        $uploadData = json_encode($subscriptions);
+        
+        $ch = curl_init($remoteUploadUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $uploadData);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        
+        $uploadResult = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200) {
+            logDebug("リモートサーバーへのHTTPアップロード成功");
+        } else {
+            logDebug("リモートサーバーへのHTTPアップロード失敗: HTTP $httpCode");
+        }
         
         logDebug("購読情報を正常に保存しました");
         http_response_code(201);
