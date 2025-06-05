@@ -204,6 +204,7 @@ $from_idx = isset($_GET['idx']) ? (int)$_GET['idx'] : -1;
         });
     </script>
 
+    <script src="js/config.js"></script>
     <script src="js/app.js"></script>
 </body>
 

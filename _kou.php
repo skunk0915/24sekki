@@ -42,11 +42,11 @@ $kou = $kou_list[$idx];
     <div id="kouList" class="kou-list hidden">
         <ul>
         <?php foreach ($kou_list as $i => $kou_item): ?>
-            <li><a href="kou.php?idx=<?php echo $i; ?>"><?php echo htmlspecialchars($kou_item['候名']); ?>（<?php echo htmlspecialchars($kou_item['和名']); ?>）</a></li>
+            <li><a href="_kou.php?idx=<?php echo $i; ?>"><?php echo htmlspecialchars($kou_item['候名']); ?>（<?php echo htmlspecialchars($kou_item['和名']); ?>）</a></li>
         <?php endforeach; ?>
         </ul>
         <button id="closeMenu">閉じる</button>
     </div>
-    <script src="js/scripts.js"></script>
+
 </body>
 </html>
