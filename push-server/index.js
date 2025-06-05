@@ -159,27 +159,26 @@ app.get('/send', async (req, res) => {
   }
 });
 
-// 個別の購読情報に通知を送信（POST）
+// 個別の購読情報を登録（POST）
 app.post('/send', async (req, res) => {
   console.log('POSTリクエストを受信しました:', req.body);
   try {
-    const { subscription, title, body } = req.body;
+    const { subscription } = req.body;
     
     if (!subscription) {
       return res.status(400).json({ error: '購読情報が必要です' });
     }
     
-    const payload = JSON.stringify({
-      title: title || 'テスト通知',
-      body: body || 'これはテスト通知です',
-    });
+    // 購読情報の検証のみを行い、テスト通知は送信しない
+    if (!isValidSubscription(subscription)) {
+      return res.status(400).json({ error: '無効な購読情報です' });
+    }
     
-    console.log('通知を送信します:', { subscription, payload });
-    await webpush.sendNotification(subscription, payload);
+    console.log('有効な購読情報を受信しました');
     
-    return res.status(200).json({ success: true, message: '通知送信完了' });
+    return res.status(200).json({ success: true, message: '購読情報を受け付けました' });
   } catch (err) {
-    console.error('通知送信エラー:', err);
+    console.error('購読処理エラー:', err);
     return res.status(500).json({ error: err.message });
   }
 });
@@ -421,27 +420,25 @@ app.get('/wake', (req, res) => {
   });
 });
 
-// 指定された購読者に通知を送信するエンドポイント
+// 指定された購読者の情報を検証するエンドポイント
 app.post('/notify', async (req, res) => {
   try {
-    console.log('個別通知リクエストを受信しました:', req.body);
-    const { title, body, subscription } = req.body;
+    console.log('購読情報検証リクエストを受信しました:', req.body);
+    const { subscription } = req.body;
     
     if (!subscription) {
       return res.status(400).json({ error: '購読情報が必要です' });
     }
     
-    const payload = JSON.stringify({
-      title: title || 'プッシュ通知',
-      body: body || '通知内容'
-    });
+    // 購読情報の検証のみを行い、テスト通知は送信しない
+    if (!isValidSubscription(subscription)) {
+      return res.status(400).json({ error: '無効な購読情報です' });
+    }
     
-    console.log('通知を送信します:', { title, body });
-    await webpush.sendNotification(subscription, payload);
-    
-    return res.status(200).json({ success: true, message: '通知送信完了' });
+    console.log('購読情報の検証に成功しました');
+    return res.status(200).json({ success: true, message: '有効な購読情報です' });
   } catch (err) {
-    console.error('通知送信エラー:', err);
+    console.error('購読情報検証エラー:', err);
     return res.status(500).json({ error: err.message });
   }
 });
