@@ -153,18 +153,18 @@ async function updatePushBtnText() {
   }
   const registration = await navigator.serviceWorker.getRegistration();
   if (!registration) {
-    btn.textContent = '暦が変わったら通知する';
+    btn.textContent = '通知をONにする';
     btn.disabled = false;
     timeInput.disabled = false;
     return;
   }
   const subscription = await registration.pushManager.getSubscription();
   if (subscription) {
-    btn.textContent = '暦が変わっても通知しない';
+    btn.textContent = '通知をOFFにする';
     btn.disabled = false;
     timeInput.disabled = true; // ON時は時刻変更不可
   } else {
-    btn.textContent = '暦が変わったら通知する';
+    btn.textContent = '通知をONにする';
     btn.disabled = false;
     timeInput.disabled = false;
   }

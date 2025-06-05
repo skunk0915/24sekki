@@ -97,16 +97,34 @@ if ($isTestMode && !isset($sekkiData[$today])) {
 // 購読情報を読み込む
 $subscriptionsFile = __DIR__ . '/subscriptions.txt';
 $subscriptions = [];
+$notifyTimes = [];
 
 if (file_exists($subscriptionsFile)) {
     $lines = file($subscriptionsFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        $subscription = json_decode($line, true);
-        // エンドポイントと通知時刻の両方がある購読情報のみ処理
-        if ($subscription && isset($subscription['endpoint']) && isset($subscription['notifyTime'])) {
-            $subscriptions[] = $subscription;
+        $data = json_decode($line, true);
+        if (!$data) {
+            logMessage("JSON解析エラー: {$line}");
+            continue;
+        }
+        
+        // エンドポイントと通知時刻の両方がある購読情報
+        if (isset($data['endpoint']) && isset($data['notifyTime'])) {
+            $subscriptions[] = $data;
+        }
+        // 通知時刻のみのエントリ
+        elseif (isset($data['notifyTime']) && !isset($data['endpoint'])) {
+            $notifyTimes[] = $data['notifyTime'];
         }
     }
+}
+
+// 通知時刻のみのエントリを処理するために擬似的な購読情報を作成
+foreach ($notifyTimes as $time) {
+    $subscriptions[] = [
+        'notifyTime' => $time,
+        'pseudo_subscription' => true // 擬似的な購読情報であることを示すフラグ
+    ];
 }
 
 logMessage('購読者数: ' . count($subscriptions));
@@ -129,7 +147,7 @@ foreach ($subscriptions as $subscription) {
         logMessage("通知時刻 {$notifyTime} の5分前です。プッシュサーバーを起動します。");
         
         // render.comのプッシュサーバーを起動するリクエストを送信
-        // 一時的に/testエンドポイントを使用（既に存在するエンドポイント）
+        // /testエンドポイントを使用（既に存在するエンドポイント）
         $pushServerUrl = 'https://putsushiyutong-zhi-yong.onrender.com/test';
         $ch = curl_init($pushServerUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -149,6 +167,12 @@ foreach ($subscriptions as $subscription) {
         $sekkiInfo = $sekkiData[$today];
         $title = "{$sekkiInfo['type']}「{$sekkiInfo['name']}」";
         $body = "本日から{$sekkiInfo['name']}（{$sekkiInfo['reading']}）です。";
+        
+        // 擬似的な購読情報の場合は通知を送信しない
+        if (isset($subscription['pseudo_subscription']) && $subscription['pseudo_subscription']) {
+            logMessage("通知時刻 {$notifyTime} の擬似購読情報です。実際の通知は送信しません。");
+            continue;
+        }
         
         // 通知送信リクエスト
         $notifyUrl = 'https://putsushiyutong-zhi-yong.onrender.com/notify';
