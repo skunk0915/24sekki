@@ -29,6 +29,26 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY
 );
 
+function isValidSubscription(subscription) {
+  if (!subscription || typeof subscription !== 'object') {
+    return false;
+  }
+  
+  if (!subscription.endpoint || 
+      typeof subscription.endpoint !== 'string' ||
+      subscription.endpoint.startsWith('dummy_endpoint_')) {
+    return false;
+  }
+  
+  if (!subscription.keys || 
+      !subscription.keys.p256dh || 
+      !subscription.keys.auth) {
+    return false;
+  }
+  
+  return true;
+}
+
 // 暦情報を取得する関数
 async function getCurrentSekki() {
   try {
@@ -68,9 +88,11 @@ async function sendNotificationToAll(title, body) {
     if (lines.length > 0) {
       try {
         const firstSubscription = JSON.parse(lines[0]);
+        const isValid = isValidSubscription(firstSubscription);
         console.log('最初の購読情報サンプル:', {
-          endpoint: firstSubscription.endpoint,
-          keys: firstSubscription.keys ? Object.keys(firstSubscription.keys) : 'keysなし'
+          endpoint: firstSubscription.endpoint ? (firstSubscription.endpoint.startsWith('dummy_endpoint_') ? 'ダミーエンドポイント' : '有効なエンドポイント') : 'エンドポイントなし',
+          keys: firstSubscription.keys ? Object.keys(firstSubscription.keys) : 'keysなし',
+          isValid: isValid
         });
       } catch (e) {
         console.error('購読情報の解析エラー:', e);
@@ -88,6 +110,12 @@ async function sendNotificationToAll(title, body) {
       try {
         const line = lines[i];
         const subscription = JSON.parse(line);
+        
+        if (!isValidSubscription(subscription)) {
+          console.log(`購読者 ${i+1}/${lines.length} をスキップ: 無効な購読情報`);
+          continue;
+        }
+        
         console.log(`購読者 ${i+1}/${lines.length} に通知を送信中...`);
         await webpush.sendNotification(subscription, payload);
         console.log(`購読者 ${i+1} への通知送信成功`);
@@ -243,16 +271,20 @@ app.get('/check-subscriptions', async (req, res) => {
     for (let i = 0; i < lines.length; i++) {
       try {
         const subscription = JSON.parse(lines[i]);
+        const isValid = isValidSubscription(subscription);
         subscriptions.push({
           index: i,
           endpoint: subscription.endpoint,
-          keys: subscription.keys ? Object.keys(subscription.keys) : null
+          keys: subscription.keys ? Object.keys(subscription.keys) : null,
+          isValid: isValid,
+          isDummy: subscription.endpoint && subscription.endpoint.startsWith('dummy_endpoint_')
         });
       } catch (e) {
         subscriptions.push({
           index: i,
           error: e.message,
-          raw: lines[i].substring(0, 100) + '...'
+          raw: lines[i].substring(0, 100) + '...',
+          isValid: false
         });
       }
     }
