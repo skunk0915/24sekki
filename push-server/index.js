@@ -364,7 +364,20 @@ async function sendScheduledNotifications() {
     const hh = String(jstNow.getHours()).padStart(2, '0');
     const mm = String(jstNow.getMinutes()).padStart(2, '0');
     const currentTime = `${hh}:${mm}`;
-
+ 
+    // 節気変更日のみ通知を送信する
+    const currentSekki = await getCurrentSekki();
+    if (!currentSekki) {
+      console.error('[scheduler] 現在の節気取得失敗');
+      return;
+    }
+    const todayMD = `${jstNow.getMonth() + 1}/${jstNow.getDate()}`; // APIはM/D形式
+    if (currentSekki.start_date !== todayMD) {
+      console.log(`[scheduler] 今日は節気変更日ではありません (${currentSekki.name})`);
+      return;
+    }
+    const sekkiTitle = currentSekki.name;
++
     // 定期処理ログ（毎分）
     console.log(`[scheduler] 現在時刻(JST): ${currentTime}`);
 
@@ -397,8 +410,8 @@ async function sendScheduledNotifications() {
       targets++;
 
       const payload = JSON.stringify({
-        title: 'リマインダー',
-        body: `設定時刻(${sub.notifyTime})になりました`,
+        title: sekkiTitle,
+        body: '',
       });
 
       try {
