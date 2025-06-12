@@ -45,7 +45,8 @@ async function subscribeUser() {
       }
       
       // PHPに購読情報＋時刻とブラウザIDを送信
-      const sendData = Object.assign({}, subscription, {
+      const subscriptionData = subscription && typeof subscription.toJSON === 'function' ? subscription.toJSON() : subscription;
+      const sendData = Object.assign({}, subscriptionData, {
         notifyTime,
         browserId
       });
@@ -205,7 +206,8 @@ async function togglePushSubscription() {
       let sendData = { notifyTime, browserId };
       
       if (subscription) {
-        sendData = Object.assign({}, subscription, sendData);
+        const subData = typeof subscription.toJSON === 'function' ? subscription.toJSON() : subscription;
+        sendData = Object.assign({}, subData, sendData);
       }
       
       console.log('通知時刻のみをサーバーに送信します', sendData);
