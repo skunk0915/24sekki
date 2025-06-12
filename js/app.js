@@ -59,35 +59,8 @@ async function subscribeUser() {
       console.log('サーバーからの応答:', responseData);
       alert('プッシュ通知の購読が完了しました');
 
-      // テスト通知を送信するためのリクエスト
-      console.log('テスト通知をリクエストします');
-      try {
-        // 即時テスト通知を使用する方法に変更
-        console.log('即時テスト通知をリクエストします');
-        
-        // GETリクエストでテスト通知を送信
-        const testUrl = PUSH_CONFIG.ENDPOINTS.SEND;
-        console.log('テスト通知URL:', testUrl);
-        
-        const testResponse = await fetch(testUrl);
-        console.log('テスト通知のレスポンスステータス:', testResponse.status);
-        
-        if (!testResponse.ok) {
-          throw new Error(`テスト通知リクエストエラー: ${testResponse.status} ${testResponse.statusText}`);
-        }
-        
-        const testResult = await testResponse.text();
-        console.log('テスト通知の結果:', testResult);
-        alert('テスト通知を送信しました');
-      } catch (testError) {
-        console.error('テスト通知の送信に失敗しました:', testError);
-        console.error('エラーの詳細:', {
-          name: testError.name,
-          message: testError.message,
-          stack: testError.stack
-        });
-        // エラーが発生しても通知購読自体は成功しているのでユーザーには通知しない
-      }
+      // サーバー起動予約
+      scheduleWakeCall(notifyTime);
     } catch (error) {
       console.error('購読処理中にエラーが発生しました:', error);
       alert('購読処理中にエラーが発生しました: ' + error.message);
@@ -261,3 +234,51 @@ async function unsubscribeUser() {
     }
   }
 }
+
+// --- サーバー起動予約関連 ---
+let wakeTimerId = null;
+
+function scheduleWakeCall(notifyTime) {
+  if (!notifyTime) return;
+  // 既存タイマーをクリア
+  if (wakeTimerId) clearTimeout(wakeTimerId);
+
+  const [hh, mm] = notifyTime.split(':').map(Number);
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm);
+  // 当日で既に過ぎている場合は翌日扱い
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 1);
+  }
+  // 5分前
+  target.setMinutes(target.getMinutes() - 5);
+
+  const diffMs = target.getTime() - now.getTime();
+  if (diffMs <= 0) {
+    // すでに5分前を過ぎている場合は即起動
+    callWakeEndpoint();
+    return;
+  }
+  console.log('サーバー起動を予約:', new Date(target.getTime()).toLocaleString(), `まで ${Math.round(diffMs/60000)} 分後`);
+  wakeTimerId = setTimeout(() => {
+    callWakeEndpoint();
+    // 予約後に再度翌日分を設定
+    scheduleWakeCall(notifyTime);
+  }, diffMs);
+}
+
+function callWakeEndpoint() {
+  console.log('wake エンドポイントを呼び出します');
+  fetch(PUSH_CONFIG.ENDPOINTS.WAKE)
+    .then(res => res.json())
+    .then(data => console.log('wake 応答:', data))
+    .catch(err => console.error('wake 呼び出し失敗:', err));
+}
+
+// ページ読み込み時に既存の通知時刻があれば予約
+document.addEventListener('DOMContentLoaded', () => {
+  const storedTime = localStorage.getItem('notifyTime');
+  if (storedTime) {
+    scheduleWakeCall(storedTime);
+  }
+});

@@ -4,6 +4,8 @@ const webpush = require('web-push');
 const cors = require('cors');
 const cron = require('node-cron');
 require('dotenv').config();
+const fs = require('fs');
+const config = require('./config.json');
 
 // Expressアプリの初期化
 const app = express();
@@ -139,50 +141,6 @@ async function sendNotificationToAll(title, body) {
     return { success: 0, failed: 0, error: err.message, stack: err.stack };
   }
 }
-
-// さくらにある購読情報を取得して通知送信（GET）
-app.get('/send', async (req, res) => {
-  try {
-    const currentSekki = await getCurrentSekki();
-    if (!currentSekki) {
-      return res.status(500).send('暦情報の取得に失敗しました');
-    }
-    
-    const title = '暦のお知らせ';
-    const body = `現在の暦は「${currentSekki.name}」です（${currentSekki.start_date}～${currentSekki.end_date}）`;
-    
-    const result = await sendNotificationToAll(title, body);
-    res.send(`通知送信完了: 成功=${result.success}, 失敗=${result.failed}`);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('通知送信失敗: ' + err.message);
-  }
-});
-
-// 個別の購読情報に通知を送信（POST）
-app.post('/send', async (req, res) => {
-  console.log('POSTリクエストを受信しました:', req.body);
-  try {
-    const { subscription, title, body } = req.body;
-    
-    if (!subscription) {
-      return res.status(400).json({ error: '購読情報が必要です' });
-    }
-    
-    const payload = JSON.stringify({
-      title: title || 'テスト通知',
-      body: body || 'これはテスト通知です',
-    });
-    
-    console.log('通知を送信します:', { subscription, payload });
-    await webpush.sendNotification(subscription, payload);
-    
-    return res.status(200).json({ success: true, message: '通知送信完了' });
-  } catch (err) {
-    console.error('通知送信エラー:', err);
-    return res.status(500).json({ error: err.message });
-  }
-});
 
 // 暦が変わったかチェックするエンドポイント
 app.get('/check-sekki-change', async (req, res) => {
@@ -358,6 +316,68 @@ app.get('/test-next-sekki', async (req, res) => {
   }
 });
 
+// 時刻指定通知を送信する関数
+async function sendScheduledNotifications() {
+  try {
+    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000); // JST
+    const hh = String(jstNow.getHours()).padStart(2, '0');
+    const mm = String(jstNow.getMinutes()).padStart(2, '0');
+    const currentTime = `${hh}:${mm}`;
+
+    // 定期処理ログ（毎分）
+    console.log(`[scheduler] 現在時刻(JST): ${currentTime}`);
+
+    const response = await fetch(process.env.SUBSCRIPTIONS_URL);
+    if (!response.ok) {
+      console.error('[scheduler] 購読情報取得エラー:', response.statusText);
+      return;
+    }
+    const txt = await response.text();
+    if (!txt || txt.trim() === '') {
+      console.log('[scheduler] 購読者なし');
+      return;
+    }
+
+    const lines = txt.trim().split('\n');
+    let success = 0;
+    let failed = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      let sub;
+      try {
+        sub = JSON.parse(lines[i]);
+      } catch (e) {
+        continue; // JSON解析エラーはスキップ
+      }
+
+      if (!sub.notifyTime || sub.notifyTime !== currentTime) continue; // 時刻が一致しない
+      if (!isValidSubscription(sub)) continue; // 無効な購読情報
+
+      const payload = JSON.stringify({
+        title: 'リマインダー',
+        body: `設定時刻(${sub.notifyTime})になりました`,
+      });
+
+      try {
+        await webpush.sendNotification(sub, payload);
+        success++;
+      } catch (err) {
+        failed++;
+        console.error('[scheduler] 通知送信失敗:', err.message);
+      }
+    }
+
+    if (success || failed) {
+      console.log(`[scheduler] 通知送信結果: 成功=${success}, 失敗=${failed}`);
+    }
+  } catch (err) {
+    console.error('[scheduler] エラー:', err);
+  }
+}
+
+// 毎分スケジュール
+cron.schedule('* * * * *', sendScheduledNotifications);
+
 // 毎日午前0時に暦の変更をチェック
 cron.schedule('0 0 * * *', async () => {
   console.log('暦の変更をチェックします...');
@@ -414,6 +434,8 @@ app.get('/test', (req, res) => {
 // サーバー起動用エンドポイント（通知の5分前に呼び出される）
 app.get('/wake', (req, res) => {
   console.log('サーバー起動リクエストを受信しました:', new Date().toLocaleString());
+  // 起動直後にスケジュールチェックを即実行
+  sendScheduledNotifications();
   res.json({
     status: 'ok',
     message: 'サーバーが起動しました',
@@ -421,27 +443,25 @@ app.get('/wake', (req, res) => {
   });
 });
 
-// 指定された購読者に通知を送信するエンドポイント
+// 指定された購読者の情報を検証するエンドポイント
 app.post('/notify', async (req, res) => {
   try {
-    console.log('個別通知リクエストを受信しました:', req.body);
-    const { title, body, subscription } = req.body;
+    console.log('購読情報検証リクエストを受信しました:', req.body);
+    const { subscription } = req.body;
     
     if (!subscription) {
       return res.status(400).json({ error: '購読情報が必要です' });
     }
     
-    const payload = JSON.stringify({
-      title: title || 'プッシュ通知',
-      body: body || '通知内容'
-    });
+    // 購読情報の検証のみを行い、テスト通知は送信しない
+    if (!isValidSubscription(subscription)) {
+      return res.status(400).json({ error: '無効な購読情報です' });
+    }
     
-    console.log('通知を送信します:', { title, body });
-    await webpush.sendNotification(subscription, payload);
-    
-    return res.status(200).json({ success: true, message: '通知送信完了' });
+    console.log('購読情報の検証に成功しました');
+    return res.status(200).json({ success: true, message: '有効な購読情報です' });
   } catch (err) {
-    console.error('通知送信エラー:', err);
+    console.error('購読情報検証エラー:', err);
     return res.status(500).json({ error: err.message });
   }
 });
@@ -453,7 +473,6 @@ app.get('/', (req, res) => {
     message: 'プッシュ通知サーバーが動作しています',
     endpoints: [
       '/test',
-      '/send',
       '/wake',
       '/notify',
       '/check-subscriptions',
