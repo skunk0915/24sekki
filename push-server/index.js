@@ -142,6 +142,49 @@ async function sendNotificationToAll(title, body) {
   }
 }
 
+// さくらにある購読情報を取得して通知送信（GET）
+app.get('/send', async (req, res) => {
+  try {
+    const currentSekki = await getCurrentSekki();
+    if (!currentSekki) {
+      return res.status(500).send('暦情報の取得に失敗しました');
+    }
+    
+    const title = '暦のお知らせ';
+    const body = `現在の暦は「${currentSekki.name}」です（${currentSekki.start_date}～${currentSekki.end_date}）`;
+    
+    const result = await sendNotificationToAll(title, body);
+    res.send(`通知送信完了: 成功=${result.success}, 失敗=${result.failed}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('通知送信失敗: ' + err.message);
+  }
+});
+
+// 個別の購読情報を登録（POST）
+app.post('/send', async (req, res) => {
+  console.log('POSTリクエストを受信しました:', req.body);
+  try {
+    const { subscription } = req.body;
+    
+    if (!subscription) {
+      return res.status(400).json({ error: '購読情報が必要です' });
+    }
+    
+    // 購読情報の検証のみを行い、テスト通知は送信しない
+    if (!isValidSubscription(subscription)) {
+      return res.status(400).json({ error: '無効な購読情報です' });
+    }
+    
+    console.log('有効な購読情報を受信しました');
+    
+    return res.status(200).json({ success: true, message: '購読情報を受け付けました' });
+  } catch (err) {
+    console.error('購読処理エラー:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // 暦が変わったかチェックするエンドポイント
 app.get('/check-sekki-change', async (req, res) => {
   try {
