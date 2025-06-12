@@ -42,12 +42,8 @@ function isValidSubscription(subscription) {
     return false;
   }
   
-  if (!subscription.keys || 
-      !subscription.keys.p256dh || 
-      !subscription.keys.auth) {
-    return false;
-  }
-  
+  // keys はブラウザによって含まれない場合がある（iOS Safari など）。
+  // endpoint が有効なら keys の有無は問わない。
   return true;
 }
 
@@ -106,6 +102,7 @@ async function sendNotificationToAll(title, body) {
     
     let successCount = 0;
     let failedCount = 0;
+    let validCount = 0;
     let errors = [];
     
     for (let i = 0; i < lines.length; i++) {
@@ -117,6 +114,7 @@ async function sendNotificationToAll(title, body) {
           console.log(`購読者 ${i+1}/${lines.length} をスキップ: 無効な購読情報`);
           continue;
         }
+        validCount++;
         
         console.log(`購読者 ${i+1}/${lines.length} に通知を送信中...`);
         await webpush.sendNotification(subscription, payload);
@@ -134,7 +132,7 @@ async function sendNotificationToAll(title, body) {
       }
     }
     
-    console.log(`通知送信結果: 成功=${successCount}, 失敗=${failedCount}`);
+    console.log(`通知送信結果: 成功=${successCount}, 失敗=${failedCount}, 有効購読=${validCount}`);
     return { success: successCount, failed: failedCount, errors: errors.length > 0 ? errors : undefined };
   } catch (err) {
     console.error('通知送信処理でエラーが発生しました:', err);
@@ -384,6 +382,7 @@ async function sendScheduledNotifications() {
     const lines = txt.trim().split('\n');
     let success = 0;
     let failed = 0;
+    let targets = 0;
 
     for (let i = 0; i < lines.length; i++) {
       let sub;
@@ -395,6 +394,7 @@ async function sendScheduledNotifications() {
 
       if (!sub.notifyTime || sub.notifyTime !== currentTime) continue; // 時刻が一致しない
       if (!isValidSubscription(sub)) continue; // 無効な購読情報
+      targets++;
 
       const payload = JSON.stringify({
         title: 'リマインダー',
@@ -410,8 +410,8 @@ async function sendScheduledNotifications() {
       }
     }
 
-    if (success || failed) {
-      console.log(`[scheduler] 通知送信結果: 成功=${success}, 失敗=${failed}`);
+    if (targets) {
+      console.log(`[scheduler] 通知送信結果: 成功=${success}, 失敗=${failed}, 対象=${targets}`);
     }
   } catch (err) {
     console.error('[scheduler] エラー:', err);
