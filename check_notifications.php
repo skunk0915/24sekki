@@ -44,28 +44,50 @@ $isTestMode = ($today === $testDate);
 // 節気データを読み込む
 function loadSekkiData() {
     $sekkiData = [];
-    
+    $currentYear = date('Y');
+
+    // m/d または yyyy-mm-dd を yyyy-mm-dd へ正規化するクロージャ
+    $normalizeDate = function($date) use ($currentYear) {
+        // 例: "6/16" → "2025-06-16"
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})$/', trim($date), $m)) {
+            return sprintf('%04d-%02d-%02d', $currentYear, $m[1], $m[2]);
+        }
+        return trim($date); // すでに YYYY-MM-DD 形式
+    };
+
     // 二十四節気のデータを読み込む
     $sekki_list = load_sekki_data('24sekki.csv');
     foreach ($sekki_list as $sekki) {
-        if (isset($sekki['開始年月日']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $sekki['開始年月日'])) {
-            $sekkiData[$sekki['開始年月日']] = [
+        if (!isset($sekki['開始年月日'])) {
+            continue;
+        }
+        $dateKey = $normalizeDate($sekki['開始年月日']);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateKey)) {
+            $sekkiData[$dateKey] = [
                 'type' => '二十四節気',
-                'name' => $sekki['節気名'],
-                'reading' => $sekki['読み']
+                'name' => $sekki['節気名'] ?? '',
+                'reading' => $sekki['読み'] ?? ''
             ];
+            // デバッグ
+            logMessage("24節気データ追加: {$dateKey} {$sekkiData[$dateKey]['name']}");
         }
     }
     
     // 七十二候のデータを読み込む
     $kou_list = load_kou_data('72kou.csv');
     foreach ($kou_list as $kou) {
-        if (isset($kou['開始年月日']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $kou['開始年月日'])) {
-            $sekkiData[$kou['開始年月日']] = [
+        if (!isset($kou['開始年月日'])) {
+            continue;
+        }
+        $dateKey = $normalizeDate($kou['開始年月日']);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateKey)) {
+            $sekkiData[$dateKey] = [
                 'type' => '七十二候',
-                'name' => $kou['和名'],
-                'reading' => $kou['読み']
+                'name' => $kou['和名'] ?? '',
+                'reading' => $kou['読み'] ?? ''
             ];
+            // デバッグ
+            logMessage("72候データ追加: {$dateKey} {$sekkiData[$dateKey]['name']}");
         }
     }
     

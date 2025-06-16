@@ -169,3 +169,20 @@
 [2025-06-12 12:41:43] 新規購読情報を追加: {"endpoint":"https:\/\/web.push.apple.com\/QKT78J00OnaFFLIkfDslAIvJVIR0LoSwp7dU0oSonG_Vg_Y0exQd6KacSdwMfhrvz7SaNo0adaaE5y1DCjbJnruNgElYktdgkLGGpX5Y9lBi18OzGYMzj0I-_uLDyPVn3iHfilMrlEt_FDQv1xBjROdNnyubOk9aQIrBUYcpEEw","keys":{"p256dh":"BCqYjOd-iAvdmiT41Z86fS4g7yX8g2SH9FaHpY4GpMkbtvF4Xvm61_zZRTXmgZ5QbCirXBo3qHN5joEzYUxxIK8","auth":"DUPqPjYHpvx4VJ9lqAQLbQ"},"notifyTime":"12:45","browserId":"browser_1749699687773_j9gsi0re0"}
 [2025-06-12 12:41:43] リモートサーバーへのHTTPアップロード失敗: HTTP 404
 [2025-06-12 12:41:43] 購読情報を正常に保存しました
+[2025-06-12 13:08:09] 受信データ: {"endpoint":"https://web.push.apple.com/QPJlexRvtDF6Qu51uAy6mTAGgg20xuX2ieuYwHTn04DQWKOeMp0ieLEAvcHVqRtXgMjKwntRYDuPq70qi5gFFfhsOtS1Oa5ZbsdVV9e9EVH8U4cXy1JVXMzhzCVLttl9NkbSKygjpQ4tiDskn5EdNqqc1n5Od_Uu2pizB4Bz8X0","keys":{"p256dh":"BImzmFjx45vyAfCMVmmFOQalMQrfHbndvessMGsHB87JeGXcVrrIJQVJlrXy-4LVK7s6AbJ4FADaljVqTQIOHHk","auth":"jQ-BMG6_BBiAuy-VgSBWuw"},"notifyTime":"06:01","browserId":"browser_1749701272346_n45clkeqg"}
+[2025-06-12 13:08:09] デコードされたデータ: Array
+(
+    [endpoint] => https://web.push.apple.com/QPJlexRvtDF6Qu51uAy6mTAGgg20xuX2ieuYwHTn04DQWKOeMp0ieLEAvcHVqRtXgMjKwntRYDuPq70qi5gFFfhsOtS1Oa5ZbsdVV9e9EVH8U4cXy1JVXMzhzCVLttl9NkbSKygjpQ4tiDskn5EdNqqc1n5Od_Uu2pizB4Bz8X0
+    [keys] => Array
+        (
+            [p256dh] => BImzmFjx45vyAfCMVmmFOQalMQrfHbndvessMGsHB87JeGXcVrrIJQVJlrXy-4LVK7s6AbJ4FADaljVqTQIOHHk
+            [auth] => jQ-BMG6_BBiAuy-VgSBWuw
+        )
+
+    [notifyTime] => 06:01
+    [browserId] => browser_1749701272346_n45clkeqg
+)
+
+[2025-06-12 13:08:09] 新規購読情報を追加: {"endpoint":"https:\/\/web.push.apple.com\/QPJlexRvtDF6Qu51uAy6mTAGgg20xuX2ieuYwHTn04DQWKOeMp0ieLEAvcHVqRtXgMjKwntRYDuPq70qi5gFFfhsOtS1Oa5ZbsdVV9e9EVH8U4cXy1JVXMzhzCVLttl9NkbSKygjpQ4tiDskn5EdNqqc1n5Od_Uu2pizB4Bz8X0","keys":{"p256dh":"BImzmFjx45vyAfCMVmmFOQalMQrfHbndvessMGsHB87JeGXcVrrIJQVJlrXy-4LVK7s6AbJ4FADaljVqTQIOHHk","auth":"jQ-BMG6_BBiAuy-VgSBWuw"},"notifyTime":"06:01","browserId":"browser_1749701272346_n45clkeqg"}
+[2025-06-12 13:08:09] リモートサーバーへのHTTPアップロード失敗: HTTP 404
+[2025-06-12 13:08:09] 購読情報を正常に保存しました
