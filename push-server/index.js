@@ -410,8 +410,8 @@ async function sendScheduledNotifications() {
       targets++;
 
       const payload = JSON.stringify({
-        title: sekkiTitle,
-        body: '',
+        title: '暦のお知らせ',
+        body: `現在の暦は「${sekkiTitle}」です`,
       });
 
       try {
