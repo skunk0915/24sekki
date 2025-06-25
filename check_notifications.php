@@ -112,9 +112,9 @@ function loadSekkiData() {
         }
         // mm-dd形式のキーを生成
         $mmddKey = $dateObj->format('m-d');
-        // 二十四節気と重複している場合は、重複がなくなるまで1日ずつ進める
+        // 既に何らかのデータ（二十四節気または他の七十二候）が登録されている場合は、日付が空くまで1日ずつ進める
         $tryCount = 0;
-        while (isset($sekkiData[$mmddKey]) && $sekkiData[$mmddKey]['type'] === '二十四節気' && $tryCount < 10) {
+        while (isset($sekkiData[$mmddKey]) && $tryCount < 10) {
             $dateObj->modify('+1 day');
             $mmddKey = $dateObj->format('m-d');
             $tryCount++;
