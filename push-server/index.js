@@ -54,11 +54,19 @@ function loadKouData() {
     const path = require('path');
     const results = [];
     
-    // プロジェクトルートの72kou.csvを読み込む
-    const csvPath = path.join(__dirname, '../../72kou.csv');
+    // プロジェクトルートの72kou.csvを探索して読み込む
+    const candidatePaths = [
+      path.join(__dirname, '../72kou.csv'),      // 通常: push-server 上位1階層
+      path.join(__dirname, '../../72kou.csv'),   // 旧パス互換
+      path.join(process.cwd(), '72kou.csv')      // カレントディレクトリ
+    ];
+
+    // 最初に存在するパスを採用
+    const csvPath = candidatePaths.find(p => fs.existsSync(p));
+    console.log(`[scheduler] 七十二候CSV検索パス: ${candidatePaths.join(' | ')}`);
     
-    if (!fs.existsSync(csvPath)) {
-      console.error(`[scheduler] 七十二候CSVファイルが見つかりません: ${csvPath}`);
+    if (!csvPath) {
+      console.error('[scheduler] 七十二候CSVファイルが見つかりません');
       return null;
     }
     
