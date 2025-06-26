@@ -47,6 +47,94 @@ function isValidSubscription(subscription) {
   return true;
 }
 
+// 七十二候データをCSVから読み込む関数
+function loadKouData() {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const results = [];
+    
+    // プロジェクトルートの72kou.csvを読み込む
+    const csvPath = path.join(__dirname, '../../72kou.csv');
+    
+    if (!fs.existsSync(csvPath)) {
+      console.error(`[scheduler] 七十二候CSVファイルが見つかりません: ${csvPath}`);
+      return null;
+    }
+    
+    // ファイルを一度に読み込む
+    const fileContent = fs.readFileSync(csvPath, 'utf8');
+    
+    // 改行コードを統一してから行に分割
+    const lines = fileContent.replace(/\r\n?/g, '\n').split('\n');
+    if (lines.length === 0) {
+      console.error('[scheduler] CSVファイルが空です');
+      return null;
+    }
+    
+    // ヘッダー行を取得（BOMを除去）
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^\ufeff/, ''));
+    
+    // データ行を処理（複数行にまたがる値を考慮）
+    let currentRow = [];
+    let inQuotes = false;
+    let currentValue = '';
+    
+    // ヘッダー行を除くすべての行を処理
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      let startIndex = 0;
+      
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        
+        // ダブルクォーテーションの処理
+        if (char === '"') {
+          if (inQuotes && line[j + 1] === '"') {
+            // エスケープされたダブルクォーテーション
+            currentValue += '"';
+            j++; // 次の文字をスキップ
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          // カンマで区切る（ダブルクォーテーション内でない場合）
+          currentRow.push(currentValue);
+          currentValue = '';
+        } else {
+          currentValue += char;
+        }
+      }
+      
+      // 行末の処理
+      if (!inQuotes) {
+        // 現在の値を追加
+        currentRow.push(currentValue);
+        currentValue = '';
+        
+        // 行が完了したらエントリを追加
+        if (currentRow.length >= headers.length) {
+          const entry = {};
+          headers.forEach((header, index) => {
+            entry[header] = (currentRow[index] || '').trim();
+          });
+          results.push(entry);
+          currentRow = [];
+        }
+      } else {
+        // 改行が含まれる値の続き
+        currentValue += '\n';
+      }
+    }
+    
+    console.log(`[scheduler] 七十二候データを読み込みました: ${results.length}件`);
+    return results;
+  } catch (error) {
+    console.error('[scheduler] 七十二候CSVの読み込み中にエラーが発生しました:', error);
+    return null;
+  }
+}
+
 // 暦情報を取得する関数
 async function getCurrentSekki() {
   try {
@@ -391,38 +479,51 @@ async function sendScheduledNotifications() {
     }
     
     // 2. 七十二候をチェック
-    const response72 = await fetch('https://mizy.sakura.ne.jp/72kou/api/current-72kou.php');
-    if (response72.ok) {
-      kouData = await response72.json();
-      // 七十二候の日付をMM-DD形式に変換してチェック
-      const [month, day] = kouData.start_date.split('/').map(num => num.padStart(2, '0'));
-      const kouDate = `${month}-${day}`;
-      
-      if (kouDate === todayMD) {
+    const kouList = loadKouData();
+    if (kouList && kouList.length > 0) {
+      // 今日の七十二候を探す
+      const todayKou = kouList.find(kou => {
+        if (!kou['開始年月日']) return false;
+        // 日付をMM-DD形式に正規化
+        const dateParts = kou['開始年月日'].trim().split(/[\/\-]/);
+        if (dateParts.length !== 2) return false;
+        const kouDate = `${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+        return kouDate === todayMD;
+      });
+
+      if (todayKou) {
         if (!isSekkiDay) { // 二十四節気でない場合のみ七十二候を採用
-          sekkiTitle = kouData.name;
+          sekkiTitle = todayKou['和名'] || todayKou['候名'] || '七十二候';
           isKouDay = true;
-          console.log(`[scheduler] 七十二候の開始日です: ${kouDate} ${sekkiTitle}`);
+          console.log(`[scheduler] 七十二候の開始日です: ${todayMD} ${sekkiTitle}`);
         } else {
           // 二十四節気と七十二候が重複している場合は、七十二候は翌日に通知
           const tomorrow = new Date(jstNow);
           tomorrow.setDate(tomorrow.getDate() + 1);
           const tomorrowMD = `${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
           
-          // 翌日が七十二候の開始日でないことを確認してからスケジュール
-          if (kouDate !== tomorrowMD) {
-            console.log(`[scheduler] 七十二候「${kouData.name}」は二十四節気と重複したため、明日(${tomorrowMD})に通知予約`);
+          // 翌日が七十二候の開始日でないことを確認
+          const tomorrowKou = kouList.find(kou => {
+            if (!kou['開始年月日']) return false;
+            const dateParts = kou['開始年月日'].trim().split(/[\/\-]/);
+            if (dateParts.length !== 2) return false;
+            const kouDate = `${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+            return kouDate === tomorrowMD;
+          });
+          
+          if (!tomorrowKou) {
+            console.log(`[scheduler] 七十二候「${todayKou['和名'] || todayKou['候名']}」は二十四節気と重複したため、明日(${tomorrowMD})に通知予約`);
             // ここで翌日の通知をスケジュールするロジックを追加
-            // 例: scheduleNotificationForTomorrow(kouData);
+            // 例: scheduleNotificationForTomorrow(todayKou);
           } else {
-            console.log(`[scheduler] 七十二候「${kouData.name}」は明日も開始日のため通知を見送り`);
+            console.log(`[scheduler] 七十二候「${todayKou['和名'] || todayKou['候名']}」は明日も開始日のため通知を見送り`);
           }
         }
       } else {
-        console.log(`[scheduler] 七十二候の開始日ではありません (${kouData.name} 開始日: ${kouDate})`);
+        console.log(`[scheduler] 七十二候の開始日ではありません`);
       }
     } else {
-      console.error('[scheduler] 七十二候データの取得に失敗しました');
+      console.error('[scheduler] 七十二候データの読み込みに失敗しました');
     }
     
     // どちらの開始日でもない場合は通知しない
