@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     timeInput = document.createElement('input');
     timeInput.type = 'time';
     timeInput.id = 'push-time-input';
+    timeInput.step = '900'; // 15分刻み（900秒 = 15分）
     timeInput.value = savedTime; // 保存された時刻またはデフォルト値
     timeInput.style.marginRight = '8px';
     const area = document.getElementById('push-btn-area');
