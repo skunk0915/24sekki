@@ -486,52 +486,32 @@ async function sendScheduledNotifications() {
       console.log(`[scheduler] 二十四節気の開始日ではありません (${currentSekki.name} 開始日: ${formattedSekkiDate})`);
     }
     
-    // 2. 七十二候をチェック
-    const kouList = loadKouData();
-    if (kouList && kouList.length > 0) {
-      // 今日の七十二候を探す
-      const todayKou = kouList.find(kou => {
-        if (!kou['開始年月日']) return false;
-        // 日付をMM-DD形式に正規化
-        const dateParts = kou['開始年月日'].trim().split(/[\/\-]/);
-        if (dateParts.length !== 2) return false;
-        const kouDate = `${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
-        return kouDate === todayMD;
-      });
+    // 2. 七十二候をチェック（二十四節気がない日のみ）
+    if (!isSekkiDay) {
+      const kouList = loadKouData();
+      if (kouList && kouList.length > 0) {
+        // 今日の七十二候を探す
+        const todayKou = kouList.find(kou => {
+          if (!kou['開始年月日']) return false;
+          // 日付をMM-DD形式に正規化
+          const dateParts = kou['開始年月日'].trim().split(/[\/\-]/);
+          if (dateParts.length !== 2) return false;
+          const kouDate = `${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+          return kouDate === todayMD;
+        });
 
-      if (todayKou) {
-        if (!isSekkiDay) { // 二十四節気でない場合のみ七十二候を採用
+        if (todayKou) {
           sekkiTitle = todayKou['和名'] || todayKou['候名'] || '七十二候';
           isKouDay = true;
           console.log(`[scheduler] 七十二候の開始日です: ${todayMD} ${sekkiTitle}`);
         } else {
-          // 二十四節気と七十二候が重複している場合は、七十二候は翌日に通知
-          const tomorrow = new Date(jstNow);
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          const tomorrowMD = `${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-          
-          // 翌日が七十二候の開始日でないことを確認
-          const tomorrowKou = kouList.find(kou => {
-            if (!kou['開始年月日']) return false;
-            const dateParts = kou['開始年月日'].trim().split(/[\/\-]/);
-            if (dateParts.length !== 2) return false;
-            const kouDate = `${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
-            return kouDate === tomorrowMD;
-          });
-          
-          if (!tomorrowKou) {
-            console.log(`[scheduler] 七十二候「${todayKou['和名'] || todayKou['候名']}」は二十四節気と重複したため、明日(${tomorrowMD})に通知予約`);
-            // ここで翌日の通知をスケジュールするロジックを追加
-            // 例: scheduleNotificationForTomorrow(todayKou);
-          } else {
-            console.log(`[scheduler] 七十二候「${todayKou['和名'] || todayKou['候名']}」は明日も開始日のため通知を見送り`);
-          }
+          console.log(`[scheduler] 七十二候の開始日ではありません`);
         }
       } else {
-        console.log(`[scheduler] 七十二候の開始日ではありません`);
+        console.error('[scheduler] 七十二候データの読み込みに失敗しました');
       }
     } else {
-      console.error('[scheduler] 七十二候データの読み込みに失敗しました');
+      console.log(`[scheduler] 二十四節気の日のため、七十二候のチェックはスキップします`);
     }
     
     // どちらの開始日でもない場合は通知しない
