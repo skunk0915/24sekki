@@ -35,8 +35,9 @@ async function subscribeUser() {
       console.log('購読情報:', subscription);
 
       // 時刻入力値も一緒に送信
-      const timeInput = document.getElementById('push-time-input');
-      const notifyTime = timeInput ? timeInput.value : '';
+      const hourSelect = document.getElementById('push-hour-input');
+      const minuteSelect = document.getElementById('push-minute-input');
+      const notifyTime = (hourSelect && minuteSelect) ? `${hourSelect.value}:${minuteSelect.value}` : '';
       
       // 時刻をローカルストレージに保存
       if (notifyTime) {
@@ -117,23 +118,64 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'push-subscribe-btn';
-    // 時刻入力欄を作成
-    timeInput = document.createElement('input');
-    timeInput.type = 'time';
-    timeInput.id = 'push-time-input';
-    timeInput.step = '900'; // 15分刻み（900秒 = 15分）
-    timeInput.value = savedTime; // 保存された時刻またはデフォルト値
-    timeInput.style.marginRight = '8px';
+
+    // 保存された時刻を分解
+    const [savedHour, savedMinute] = savedTime.split(':');
+
+    // 時間選択欄を作成
+    const hourSelect = document.createElement('select');
+    hourSelect.id = 'push-hour-input';
+    hourSelect.style.marginRight = '4px';
+    for (let h = 0; h < 24; h++) {
+      const option = document.createElement('option');
+      option.value = String(h).padStart(2, '0');
+      option.textContent = String(h).padStart(2, '0');
+      if (String(h).padStart(2, '0') === savedHour) {
+        option.selected = true;
+      }
+      hourSelect.appendChild(option);
+    }
+
+    // 区切り文字
+    const separator = document.createElement('span');
+    separator.textContent = ':';
+    separator.style.marginRight = '4px';
+
+    // 分選択欄を作成（15分刻み）
+    const minuteSelect = document.createElement('select');
+    minuteSelect.id = 'push-minute-input';
+    minuteSelect.style.marginRight = '8px';
+    ['00', '15', '30', '45'].forEach(m => {
+      const option = document.createElement('option');
+      option.value = m;
+      option.textContent = m;
+      if (m === savedMinute) {
+        option.selected = true;
+      }
+      minuteSelect.appendChild(option);
+    });
+
     const area = document.getElementById('push-btn-area');
     if (area) {
-      area.appendChild(timeInput);
+      area.appendChild(hourSelect);
+      area.appendChild(separator);
+      area.appendChild(minuteSelect);
       area.appendChild(btn);
     } else {
-      document.body.appendChild(timeInput);
+      document.body.appendChild(hourSelect);
+      document.body.appendChild(separator);
+      document.body.appendChild(minuteSelect);
       document.body.appendChild(btn);
     }
-  } else if (timeInput) {
-    timeInput.value = savedTime; // 既存の時刻入力欄にも値を設定
+  } else {
+    // 既存の要素に値を設定
+    const hourSelect = document.getElementById('push-hour-input');
+    const minuteSelect = document.getElementById('push-minute-input');
+    if (hourSelect && minuteSelect && savedTime) {
+      const [savedHour, savedMinute] = savedTime.split(':');
+      hourSelect.value = savedHour;
+      minuteSelect.value = savedMinute;
+    }
   }
   updatePushBtnText();
   btn.onclick = togglePushSubscription;
@@ -141,30 +183,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function updatePushBtnText() {
   const btn = document.getElementById('push-subscribe-btn');
-  const timeInput = document.getElementById('push-time-input');
-  if (!btn || !timeInput) return;
+  const hourSelect = document.getElementById('push-hour-input');
+  const minuteSelect = document.getElementById('push-minute-input');
+  if (!btn || !hourSelect || !minuteSelect) return;
   if (!('serviceWorker' in navigator && 'PushManager' in window)) {
     btn.textContent = 'プッシュ非対応';
     btn.disabled = true;
-    timeInput.disabled = true;
+    hourSelect.disabled = true;
+    minuteSelect.disabled = true;
     return;
   }
   const registration = await navigator.serviceWorker.getRegistration();
   if (!registration) {
     btn.textContent = '通知をONにする';
     btn.disabled = false;
-    timeInput.disabled = false;
+    hourSelect.disabled = false;
+    minuteSelect.disabled = false;
     return;
   }
   const subscription = await registration.pushManager.getSubscription();
   if (subscription) {
     btn.textContent = '通知をOFFにする';
     btn.disabled = false;
-    timeInput.disabled = true; // ON時は時刻変更不可
+    hourSelect.disabled = true; // ON時は時刻変更不可
+    minuteSelect.disabled = true;
   } else {
     btn.textContent = '通知をONにする';
     btn.disabled = false;
-    timeInput.disabled = false;
+    hourSelect.disabled = false;
+    minuteSelect.disabled = false;
   }
 }
 
@@ -186,31 +233,32 @@ async function togglePushSubscription() {
   }
   
   // 通知時刻のみの変更の場合もサーバーに送信する
-  const timeInput = document.getElementById('push-time-input');
-  if (timeInput) {
-    const notifyTime = timeInput.value;
+  const hourSelect = document.getElementById('push-hour-input');
+  const minuteSelect = document.getElementById('push-minute-input');
+  if (hourSelect && minuteSelect) {
+    const notifyTime = `${hourSelect.value}:${minuteSelect.value}`;
     const savedTime = localStorage.getItem('notifyTime');
-    
+
     // 時刻が変更されている場合はサーバーに送信
     if (notifyTime !== savedTime) {
       localStorage.setItem('notifyTime', notifyTime);
       console.log('通知時刻を更新しました:', notifyTime);
-      
+
       // ブラウザIDを取得
       let browserId = localStorage.getItem('browserId');
       if (!browserId) {
         browserId = 'browser_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         localStorage.setItem('browserId', browserId);
       }
-      
+
       // 最新のエンドポイント情報を取得して送信
       let sendData = { notifyTime, browserId };
-      
+
       if (subscription) {
         const subData = typeof subscription.toJSON === 'function' ? subscription.toJSON() : subscription;
         sendData = Object.assign({}, subData, sendData);
       }
-      
+
       console.log('通知時刻のみをサーバーに送信します', sendData);
       fetch('./subscribe.php', {
         method: 'POST',

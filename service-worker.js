@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koyomi-cache-v9'; // バージョン更新
+const CACHE_NAME = 'koyomi-cache-v11'; // バージョン更新
 const urlsToCache = [
   './',
   './index.php',
