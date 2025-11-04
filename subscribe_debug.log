@@ -390,3 +390,57 @@
 [2025-06-22 13:53:18] 新規購読情報を追加: {"endpoint":"https:\/\/web.push.apple.com\/QFA9d3jcnxhqvCyTb81y3Th4D0ze92Rl-lEaJtZMR1dXvqhcUEf3fsk4TyF_lXAdmZ7pp1EdHiHUbA5Vtj8LIKvR77RquvNgNArxyDgmjnPsz09iSaFlIyWN1jajBEgyV9i5f8HfQ2mCpVJvqP1hyWruc-v_1pEw3nxtS5nUarI","keys":{"p256dh":"BDbe_5Xc-GhSLpH9lGtDh4zC4qSlNUONnU8Hh5hjqqoDdEBqNFDbZcIaUjwQN7fCaSZAGJw1XUg78i-8IkPyMmE","auth":"GyAhXJpbbrdy8kYveSBpug"},"notifyTime":"14:00","browserId":"browser_1750567989608_9n3b0av3r"}
 [2025-06-22 13:53:20] リモートサーバーへのHTTPアップロード失敗: HTTP 404
 [2025-06-22 13:53:20] 購読情報を正常に保存しました
+[2025-11-04 12:41:59] 受信データ: {"endpoint":"https://web.push.apple.com/QPON-iveIulH3fJgSK1fSFwLnst2Z8JhoTr8YrnTgMrmm-hUQOum5jFSAcLjn4Owl7gFG99bQRHdSJ2ucjJxZPi8FaYgWND60aQryHtb81vUFDB7YwRMGY_WuC5cd-AAl07xaEBWpCLmjSuvEGEYr2XNzkBjOkzotjk1iW0SqZs","keys":{"p256dh":"BFSDt3DF0nM34Y69LBKMLOz7uvHhZG2RlS9pDvfeGDOoE6JnYC_PpKWptwQMrscTnNlIXDwqVoECnLh8MoxzZxE","auth":"y64vayan5x2qzwCBiDQR1w"},"notifyTime":"12:45","notifyFrequency":"daily","browserId":"browser_1762227706015_av4alqeka"}
+[2025-11-04 12:41:59] デコードされたデータ: Array
+(
+    [endpoint] => https://web.push.apple.com/QPON-iveIulH3fJgSK1fSFwLnst2Z8JhoTr8YrnTgMrmm-hUQOum5jFSAcLjn4Owl7gFG99bQRHdSJ2ucjJxZPi8FaYgWND60aQryHtb81vUFDB7YwRMGY_WuC5cd-AAl07xaEBWpCLmjSuvEGEYr2XNzkBjOkzotjk1iW0SqZs
+    [keys] => Array
+        (
+            [p256dh] => BFSDt3DF0nM34Y69LBKMLOz7uvHhZG2RlS9pDvfeGDOoE6JnYC_PpKWptwQMrscTnNlIXDwqVoECnLh8MoxzZxE
+            [auth] => y64vayan5x2qzwCBiDQR1w
+        )
+
+    [notifyTime] => 12:45
+    [notifyFrequency] => daily
+    [browserId] => browser_1762227706015_av4alqeka
+)
+
+[2025-11-04 12:41:59] 新規購読情報を追加: {"endpoint":"https:\/\/web.push.apple.com\/QPON-iveIulH3fJgSK1fSFwLnst2Z8JhoTr8YrnTgMrmm-hUQOum5jFSAcLjn4Owl7gFG99bQRHdSJ2ucjJxZPi8FaYgWND60aQryHtb81vUFDB7YwRMGY_WuC5cd-AAl07xaEBWpCLmjSuvEGEYr2XNzkBjOkzotjk1iW0SqZs","keys":{"p256dh":"BFSDt3DF0nM34Y69LBKMLOz7uvHhZG2RlS9pDvfeGDOoE6JnYC_PpKWptwQMrscTnNlIXDwqVoECnLh8MoxzZxE","auth":"y64vayan5x2qzwCBiDQR1w"},"notifyTime":"12:45","notifyFrequency":"daily","browserId":"browser_1762227706015_av4alqeka"}
+[2025-11-04 12:41:59] リモートサーバーへのHTTPアップロード失敗: HTTP 404
+[2025-11-04 12:41:59] 購読情報を正常に保存しました
+[2025-11-04 14:27:58] 受信データ: {"endpoint":"https://web.push.apple.com/QBWZwMaMUtIn8XFD3B8mu2saluoilV2aWsPzPEwbVKtzLUi6T0BoV6RDpR0kvsigrtbgSLDvLOd3SnAtyvrgN1kYPfQ1mjYd_gC3amV4IEFVzeJGpG1tVZqkjx06dSVOE51aBt4DAWkrjYCbh4PdVRqQZ-0zVaz8oi7S1P9ZV54","keys":{"p256dh":"BPdqjIxM3xDiHoE0_zaS2ZS8_lH44JGwub2FCoBqekwUREtcSm1iZNTke1zIwdVooZBesAVSYvWgd_XMFKfqR_E","auth":"odjo-P8jaFArbGBa9d-U1Q"},"notifyTime":"14:30","notifyFrequency":"daily","browserId":"browser_1762234062638_la5dhm1q5"}
+[2025-11-04 14:27:58] デコードされたデータ: Array
+(
+    [endpoint] => https://web.push.apple.com/QBWZwMaMUtIn8XFD3B8mu2saluoilV2aWsPzPEwbVKtzLUi6T0BoV6RDpR0kvsigrtbgSLDvLOd3SnAtyvrgN1kYPfQ1mjYd_gC3amV4IEFVzeJGpG1tVZqkjx06dSVOE51aBt4DAWkrjYCbh4PdVRqQZ-0zVaz8oi7S1P9ZV54
+    [keys] => Array
+        (
+            [p256dh] => BPdqjIxM3xDiHoE0_zaS2ZS8_lH44JGwub2FCoBqekwUREtcSm1iZNTke1zIwdVooZBesAVSYvWgd_XMFKfqR_E
+            [auth] => odjo-P8jaFArbGBa9d-U1Q
+        )
+
+    [notifyTime] => 14:30
+    [notifyFrequency] => daily
+    [browserId] => browser_1762234062638_la5dhm1q5
+)
+
+[2025-11-04 14:27:58] 新規購読情報を追加: {"endpoint":"https:\/\/web.push.apple.com\/QBWZwMaMUtIn8XFD3B8mu2saluoilV2aWsPzPEwbVKtzLUi6T0BoV6RDpR0kvsigrtbgSLDvLOd3SnAtyvrgN1kYPfQ1mjYd_gC3amV4IEFVzeJGpG1tVZqkjx06dSVOE51aBt4DAWkrjYCbh4PdVRqQZ-0zVaz8oi7S1P9ZV54","keys":{"p256dh":"BPdqjIxM3xDiHoE0_zaS2ZS8_lH44JGwub2FCoBqekwUREtcSm1iZNTke1zIwdVooZBesAVSYvWgd_XMFKfqR_E","auth":"odjo-P8jaFArbGBa9d-U1Q"},"notifyTime":"14:30","notifyFrequency":"daily","browserId":"browser_1762234062638_la5dhm1q5"}
+[2025-11-04 14:27:58] リモートサーバーへのHTTPアップロード失敗: HTTP 404
+[2025-11-04 14:27:58] 購読情報を正常に保存しました
+[2025-11-04 14:30:31] 受信データ: {"endpoint":"https://web.push.apple.com/QF5UJ6FQZ9KL-ssiqRRwA-z6bTGGtR3UgSXf8gR_OVTuccqtzS9VdqhLD0OoS9k-6voZ9GxNr6sD9ZcywQDcsZhia26VU5_zHhRWp2uHwdVGtcRUgaEtjTlGBThzLipYn_nxQbD4BHrSABmeBPikO34_Nb5Am6spVTri11dS-X4","keys":{"p256dh":"BEhxz3EgtCTnyW6rQ_fkxZGq5nQ2cFiytsOkcF9xEeL_KwOD9pb4HEf6SnzUfzA1k2PvdkpfBec7Zdc-IQL4_Ps","auth":"7FabxmUfOJk8KVPi-3aHBA"},"notifyTime":"07:00","notifyFrequency":"daily","browserId":"browser_1762234062638_la5dhm1q5"}
+[2025-11-04 14:30:31] デコードされたデータ: Array
+(
+    [endpoint] => https://web.push.apple.com/QF5UJ6FQZ9KL-ssiqRRwA-z6bTGGtR3UgSXf8gR_OVTuccqtzS9VdqhLD0OoS9k-6voZ9GxNr6sD9ZcywQDcsZhia26VU5_zHhRWp2uHwdVGtcRUgaEtjTlGBThzLipYn_nxQbD4BHrSABmeBPikO34_Nb5Am6spVTri11dS-X4
+    [keys] => Array
+        (
+            [p256dh] => BEhxz3EgtCTnyW6rQ_fkxZGq5nQ2cFiytsOkcF9xEeL_KwOD9pb4HEf6SnzUfzA1k2PvdkpfBec7Zdc-IQL4_Ps
+            [auth] => 7FabxmUfOJk8KVPi-3aHBA
+        )
+
+    [notifyTime] => 07:00
+    [notifyFrequency] => daily
+    [browserId] => browser_1762234062638_la5dhm1q5
+)
+
+[2025-11-04 14:30:31] 新規購読情報を追加: {"endpoint":"https:\/\/web.push.apple.com\/QF5UJ6FQZ9KL-ssiqRRwA-z6bTGGtR3UgSXf8gR_OVTuccqtzS9VdqhLD0OoS9k-6voZ9GxNr6sD9ZcywQDcsZhia26VU5_zHhRWp2uHwdVGtcRUgaEtjTlGBThzLipYn_nxQbD4BHrSABmeBPikO34_Nb5Am6spVTri11dS-X4","keys":{"p256dh":"BEhxz3EgtCTnyW6rQ_fkxZGq5nQ2cFiytsOkcF9xEeL_KwOD9pb4HEf6SnzUfzA1k2PvdkpfBec7Zdc-IQL4_Ps","auth":"7FabxmUfOJk8KVPi-3aHBA"},"notifyTime":"07:00","notifyFrequency":"daily","browserId":"browser_1762234062638_la5dhm1q5"}
+[2025-11-04 14:30:31] リモートサーバーへのHTTPアップロード失敗: HTTP 404
+[2025-11-04 14:30:31] 購読情報を正常に保存しました

@@ -139,19 +139,19 @@ logMessage('判定用today=' . $today);
 logMessage('sekkiDataにtodayキーが存在するか: ' . (isset($sekkiData[$today]) ? 'YES' : 'NO'));
 $isSekkiChangeDay = isset($sekkiData[$today]) || $isTestMode; // $todayはmm-dd形式
 
-if (!$isSekkiChangeDay) {
+if ($isSekkiChangeDay) {
+    logMessage('今日は節気変更日です: ' . $today . ' ' . ($sekkiData[$today]['name'] ?? ''));
+    // テストモードの場合、節気情報をセット
+    if ($isTestMode && !isset($sekkiData[$today])) {
+        $sekkiData[$today] = [
+            'type' => 'テスト',
+            'name' => 'テスト節気',
+            'reading' => 'てすとせっき'
+        ];
+        logMessage('テストモード: 今日を節気変更日として処理します');
+    }
+} else {
     logMessage('今日は節気変更日ではありません');
-    exit;
-}
-logMessage('今日は節気変更日です: ' . $today . ' ' . ($sekkiData[$today]['name'] ?? ''));
-// テストモードの場合、節気情報をセット
-if ($isTestMode && !isset($sekkiData[$today])) {
-    $sekkiData[$today] = [
-        'type' => 'テスト',
-        'name' => 'テスト節気',
-        'reading' => 'てすとせっき'
-    ];
-    logMessage('テストモード: 今日を節気変更日として処理します');
 }
 
 // 購読情報を読み込む
@@ -229,26 +229,44 @@ foreach ($subscriptions as $subscription) {
     
     // 現在時刻が通知時刻かどうかチェック
     if ($currentTime === $notifyTime) {
-        logMessage("通知時刻 {$notifyTime} になりました。通知を送信します。");
-        
+        logMessage("通知時刻 {$notifyTime} になりました。");
+
+        // 通知頻度を取得（デフォルトは節気のみ）
+        $notifyFrequency = $subscription['notifyFrequency'] ?? 'sekki-only';
+        logMessage("通知頻度: {$notifyFrequency}");
+
+        // 通知頻度が「節気のみ」で、かつ今日が節気変更日でない場合はスキップ
+        if ($notifyFrequency === 'sekki-only' && !$isSekkiChangeDay) {
+            logMessage("通知頻度が「節気のみ」で、今日は節気変更日ではないため、通知をスキップします。");
+            continue;
+        }
+
+        logMessage("通知を送信します。");
+
         // 節気情報を取得
-        $sekkiInfo = $sekkiData[$today];
-        $title = "{$sekkiInfo['type']}「{$sekkiInfo['name']}」";
-        $body = "本日から{$sekkiInfo['name']}（{$sekkiInfo['reading']}）です。";
-        
+        if ($isSekkiChangeDay && isset($sekkiData[$today])) {
+            $sekkiInfo = $sekkiData[$today];
+            $title = "{$sekkiInfo['type']}「{$sekkiInfo['name']}」";
+            $body = "本日から{$sekkiInfo['name']}（{$sekkiInfo['reading']}）です。";
+        } else {
+            // 節気変更日でない場合（毎日通知の場合）
+            $title = "本日の暦";
+            $body = "今日も良い一日をお過ごしください。";
+        }
+
         // 擬似的な購読情報の場合は通知を送信しない
         if (isset($subscription['pseudo_subscription']) && $subscription['pseudo_subscription']) {
             logMessage("通知時刻 {$notifyTime} の擬似購読情報です。実際の通知は送信しません。");
             continue;
         }
-        
+
         // エンドポイントが存在しない購読情報は通知を送信しない
         if (!isset($subscription['endpoint']) || empty($subscription['endpoint'])) {
             logMessage("通知時刻 {$notifyTime} の購読情報にエンドポイントがありません。通知をスキップします。");
             logMessage("購読データの詳細: " . json_encode($subscription));
             continue;
         }
-        
+
         // 通知送信リクエスト
         $notifyUrl = PUSH_SERVER_NOTIFY_ENDPOINT;
         $postData = json_encode([
@@ -256,7 +274,7 @@ foreach ($subscriptions as $subscription) {
             'body' => $body,
             'subscription' => $subscription
         ]);
-        
+
         $ch = curl_init($notifyUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -266,7 +284,7 @@ foreach ($subscriptions as $subscription) {
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         logMessage("通知送信リクエスト結果: HTTP {$httpCode}, レスポンス: {$response}");
     }
 }
