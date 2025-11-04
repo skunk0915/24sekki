@@ -34,21 +34,28 @@ async function subscribeUser() {
       });
       console.log('購読情報:', subscription);
 
-      // 時刻入力値も一緒に送信
+      // 時刻入力値と通知頻度も一緒に送信
       const hourSelect = document.getElementById('push-hour-input');
       const minuteSelect = document.getElementById('push-minute-input');
+      const frequencySelect = document.getElementById('push-frequency-input');
       const notifyTime = (hourSelect && minuteSelect) ? `${hourSelect.value}:${minuteSelect.value}` : '';
-      
-      // 時刻をローカルストレージに保存
+      const notifyFrequency = frequencySelect ? frequencySelect.value : 'sekki-only';
+
+      // 時刻と通知頻度をローカルストレージに保存
       if (notifyTime) {
         localStorage.setItem('notifyTime', notifyTime);
         console.log('通知時刻を保存しました:', notifyTime);
       }
-      
-      // PHPに購読情報＋時刻とブラウザIDを送信
+      if (notifyFrequency) {
+        localStorage.setItem('notifyFrequency', notifyFrequency);
+        console.log('通知頻度を保存しました:', notifyFrequency);
+      }
+
+      // PHPに購読情報＋時刻＋頻度とブラウザIDを送信
       const subscriptionData = subscription && typeof subscription.toJSON === 'function' ? subscription.toJSON() : subscription;
       const sendData = Object.assign({}, subscriptionData, {
         notifyTime,
+        notifyFrequency,
         browserId
       });
       console.log('購読情報をサーバーに送信します', sendData);
@@ -81,10 +88,13 @@ function urlBase64ToUint8Array(base64String) {
 
 // ページロード時に購読登録ボタンを自動設置＆状態に応じて文言切替
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!('serviceWorker' in navigator && 'PushManager' in window)) return;
+  console.log('DOMContentLoaded: Push通知設定UI初期化開始');
+  console.log('ServiceWorker対応:', 'serviceWorker' in navigator);
+  console.log('PushManager対応:', 'PushManager' in window);
+
   let btn = document.getElementById('push-subscribe-btn');
   let timeInput = document.getElementById('push-time-input');
-  
+
   // ブラウザIDを生成または取得
   let browserId = localStorage.getItem('browserId');
   if (!browserId) {
@@ -95,24 +105,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('既存のブラウザIDを使用します:', browserId);
   }
   
-  // 以前設定した通知時刻を取得
+  // 以前設定した通知時刻と通知頻度を取得
   let savedTime = '08:00'; // デフォルト値
-  
-  // 現在の購読情報から時刻を取得する
+  let savedFrequency = 'sekki-only'; // デフォルト値：節気変更日のみ
+
+  // 現在の購読情報から時刻と頻度を取得する
   try {
     const registration = await navigator.serviceWorker.getRegistration();
     if (registration) {
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        // ローカルストレージから時刻を取得
+        // ローカルストレージから時刻と頻度を取得
         const storedTime = localStorage.getItem('notifyTime');
+        const storedFrequency = localStorage.getItem('notifyFrequency');
         if (storedTime) {
           savedTime = storedTime;
+        }
+        if (storedFrequency) {
+          savedFrequency = storedFrequency;
         }
       }
     }
   } catch (error) {
-    console.error('時刻取得エラー:', error);
+    console.error('時刻・頻度取得エラー:', error);
   }
   
   if (!btn) {
@@ -155,26 +170,61 @@ document.addEventListener('DOMContentLoaded', async () => {
       minuteSelect.appendChild(option);
     });
 
+    // 改行を追加
+    const lineBreak = document.createElement('br');
+
+    // 通知頻度選択欄を作成
+    const frequencySelect = document.createElement('select');
+    frequencySelect.id = 'push-frequency-input';
+    frequencySelect.style.marginRight = '8px';
+    frequencySelect.style.marginTop = '8px';
+
+    const frequencyOptions = [
+      { value: 'sekki-only', label: '節気・候の変更日のみ' },
+      { value: 'daily', label: '毎日' }
+    ];
+
+    frequencyOptions.forEach(opt => {
+      const option = document.createElement('option');
+      option.value = opt.value;
+      option.textContent = opt.label;
+      if (opt.value === savedFrequency) {
+        option.selected = true;
+      }
+      frequencySelect.appendChild(option);
+    });
+
     const area = document.getElementById('push-btn-area');
+    console.log('push-btn-area要素:', area ? '見つかりました' : '見つかりませんでした');
     if (area) {
       area.appendChild(hourSelect);
       area.appendChild(separator);
       area.appendChild(minuteSelect);
+      area.appendChild(lineBreak);
+      area.appendChild(frequencySelect);
       area.appendChild(btn);
+      console.log('push-btn-areaに要素を追加しました');
     } else {
       document.body.appendChild(hourSelect);
       document.body.appendChild(separator);
       document.body.appendChild(minuteSelect);
+      document.body.appendChild(lineBreak);
+      document.body.appendChild(frequencySelect);
       document.body.appendChild(btn);
+      console.log('document.bodyに要素を追加しました');
     }
   } else {
     // 既存の要素に値を設定
     const hourSelect = document.getElementById('push-hour-input');
     const minuteSelect = document.getElementById('push-minute-input');
+    const frequencySelect = document.getElementById('push-frequency-input');
     if (hourSelect && minuteSelect && savedTime) {
       const [savedHour, savedMinute] = savedTime.split(':');
       hourSelect.value = savedHour;
       minuteSelect.value = savedMinute;
+    }
+    if (frequencySelect && savedFrequency) {
+      frequencySelect.value = savedFrequency;
     }
   }
   updatePushBtnText();
@@ -185,12 +235,14 @@ async function updatePushBtnText() {
   const btn = document.getElementById('push-subscribe-btn');
   const hourSelect = document.getElementById('push-hour-input');
   const minuteSelect = document.getElementById('push-minute-input');
+  const frequencySelect = document.getElementById('push-frequency-input');
   if (!btn || !hourSelect || !minuteSelect) return;
   if (!('serviceWorker' in navigator && 'PushManager' in window)) {
     btn.textContent = 'プッシュ非対応';
     btn.disabled = true;
     hourSelect.disabled = true;
     minuteSelect.disabled = true;
+    if (frequencySelect) frequencySelect.disabled = true;
     return;
   }
   const registration = await navigator.serviceWorker.getRegistration();
@@ -199,6 +251,7 @@ async function updatePushBtnText() {
     btn.disabled = false;
     hourSelect.disabled = false;
     minuteSelect.disabled = false;
+    if (frequencySelect) frequencySelect.disabled = false;
     return;
   }
   const subscription = await registration.pushManager.getSubscription();
@@ -207,11 +260,13 @@ async function updatePushBtnText() {
     btn.disabled = false;
     hourSelect.disabled = true; // ON時は時刻変更不可
     minuteSelect.disabled = true;
+    if (frequencySelect) frequencySelect.disabled = true;
   } else {
     btn.textContent = '通知をONにする';
     btn.disabled = false;
     hourSelect.disabled = false;
     minuteSelect.disabled = false;
+    if (frequencySelect) frequencySelect.disabled = false;
   }
 }
 
@@ -232,17 +287,22 @@ async function togglePushSubscription() {
     await updatePushBtnText();
   }
   
-  // 通知時刻のみの変更の場合もサーバーに送信する
+  // 通知時刻・頻度のみの変更の場合もサーバーに送信する
   const hourSelect = document.getElementById('push-hour-input');
   const minuteSelect = document.getElementById('push-minute-input');
-  if (hourSelect && minuteSelect) {
+  const frequencySelect = document.getElementById('push-frequency-input');
+  if (hourSelect && minuteSelect && frequencySelect) {
     const notifyTime = `${hourSelect.value}:${minuteSelect.value}`;
+    const notifyFrequency = frequencySelect.value;
     const savedTime = localStorage.getItem('notifyTime');
+    const savedFrequency = localStorage.getItem('notifyFrequency');
 
-    // 時刻が変更されている場合はサーバーに送信
-    if (notifyTime !== savedTime) {
+    // 時刻または頻度が変更されている場合はサーバーに送信
+    if (notifyTime !== savedTime || notifyFrequency !== savedFrequency) {
       localStorage.setItem('notifyTime', notifyTime);
+      localStorage.setItem('notifyFrequency', notifyFrequency);
       console.log('通知時刻を更新しました:', notifyTime);
+      console.log('通知頻度を更新しました:', notifyFrequency);
 
       // ブラウザIDを取得
       let browserId = localStorage.getItem('browserId');
@@ -252,14 +312,14 @@ async function togglePushSubscription() {
       }
 
       // 最新のエンドポイント情報を取得して送信
-      let sendData = { notifyTime, browserId };
+      let sendData = { notifyTime, notifyFrequency, browserId };
 
       if (subscription) {
         const subData = typeof subscription.toJSON === 'function' ? subscription.toJSON() : subscription;
         sendData = Object.assign({}, subData, sendData);
       }
 
-      console.log('通知時刻のみをサーバーに送信します', sendData);
+      console.log('通知時刻・頻度をサーバーに送信します', sendData);
       fetch('./subscribe.php', {
         method: 'POST',
         body: JSON.stringify(sendData),
@@ -267,7 +327,7 @@ async function togglePushSubscription() {
       })
       .then(response => response.json())
       .then(data => console.log('サーバーからの応答:', data))
-      .catch(error => console.error('時刻送信エラー:', error));
+      .catch(error => console.error('時刻・頻度送信エラー:', error));
     }
   }
 }

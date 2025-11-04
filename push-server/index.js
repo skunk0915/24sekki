@@ -514,12 +514,6 @@ async function sendScheduledNotifications() {
       console.log(`[scheduler] 二十四節気の日のため、七十二候のチェックはスキップします`);
     }
     
-    // どちらの開始日でもない場合は通知しない
-    if (!isSekkiDay && !isKouDay) {
-      console.log('[scheduler] 今日は節気・七十二候の開始日ではありません');
-      return;
-    }
-+
     // 定期処理ログ（毎分）
     console.log(`[scheduler] 現在時刻(JST): ${currentTime}`);
 
@@ -549,11 +543,31 @@ async function sendScheduledNotifications() {
 
       if (!sub.notifyTime || sub.notifyTime !== currentTime) continue; // 時刻が一致しない
       if (!isValidSubscription(sub)) continue; // 無効な購読情報
+
+      // 通知頻度の確認（デフォルトは節気・候変更日のみ）
+      const notifyFrequency = sub.notifyFrequency || 'sekki-only';
+
+      // 節気・候変更日のみの設定の場合、開始日でない場合はスキップ
+      if (notifyFrequency === 'sekki-only' && !isSekkiDay && !isKouDay) {
+        console.log(`[scheduler] 購読者 ${i+1}: 節気・候変更日のみ設定のため、今日はスキップ`);
+        continue;
+      }
+
       targets++;
+
+      // 通知タイトルを決定
+      let notificationBody;
+      if (isSekkiDay || isKouDay) {
+        // 節気・候の開始日
+        notificationBody = `現在の暦は「${sekkiTitle}」です`;
+      } else {
+        // 毎日通知の場合は現在の節気名を使用
+        notificationBody = `現在の暦は「${currentSekki.name}」です`;
+      }
 
       const payload = JSON.stringify({
         title: '暦のお知らせ',
-        body: `現在の暦は「${sekkiTitle}」です`,
+        body: notificationBody,
       });
 
       try {
@@ -567,6 +581,8 @@ async function sendScheduledNotifications() {
 
     if (targets) {
       console.log(`[scheduler] 通知送信結果: 成功=${success}, 失敗=${failed}, 対象=${targets}`);
+    } else if (!isSekkiDay && !isKouDay) {
+      console.log('[scheduler] 今日は節気・七十二候の開始日ではないため、節気・候変更日のみ設定の購読者への通知はありません');
     }
   } catch (err) {
     console.error('[scheduler] エラー:', err);
