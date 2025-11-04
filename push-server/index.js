@@ -463,6 +463,7 @@ async function sendScheduledNotifications() {
  
         const todayMD = `${String(jstNow.getMonth() + 1).padStart(2, '0')}-${String(jstNow.getDate()).padStart(2, '0')}`; // MM-DD形式
     let sekkiTitle = null;
+    let sekkiPeriod = null; // 期間を保存
     let isSekkiDay = false;
     let isKouDay = false;
     let kouData = null;
@@ -480,8 +481,9 @@ async function sendScheduledNotifications() {
     
     if (formattedSekkiDate === todayMD) {
       sekkiTitle = currentSekki.name;
+      sekkiPeriod = `${currentSekki.start_date}～${currentSekki.end_date}`;
       isSekkiDay = true;
-      console.log(`[scheduler] 二十四節気の開始日です: ${formattedSekkiDate} ${sekkiTitle}`);
+      console.log(`[scheduler] 二十四節気の開始日です: ${formattedSekkiDate} ${sekkiTitle} (${sekkiPeriod})`);
     } else {
       console.log(`[scheduler] 二十四節気の開始日ではありません (${currentSekki.name} 開始日: ${formattedSekkiDate})`);
     }
@@ -502,8 +504,9 @@ async function sendScheduledNotifications() {
 
         if (todayKou) {
           sekkiTitle = todayKou['和名'] || todayKou['候名'] || '七十二候';
+          sekkiPeriod = `${todayKou['開始年月日']}～${todayKou['終了年月日']}`;
           isKouDay = true;
-          console.log(`[scheduler] 七十二候の開始日です: ${todayMD} ${sekkiTitle}`);
+          console.log(`[scheduler] 七十二候の開始日です: ${todayMD} ${sekkiTitle} (${sekkiPeriod})`);
         } else {
           console.log(`[scheduler] 七十二候の開始日ではありません`);
         }
@@ -551,15 +554,10 @@ async function sendScheduledNotifications() {
       if (!isValidSubscription(sub)) continue; // 無効な購読情報
       targets++;
 
-      // 二十四節気と七十二候で通知メッセージを分ける
-      const notificationTitle = isSekkiDay ? '二十四節気が変わりました' : '七十二候が変わりました';
-      const notificationBody = isSekkiDay
-        ? `今日から「${sekkiTitle}」です`
-        : `今日から「${sekkiTitle}」です`;
-
+      // シンプルに節気名と期間だけを通知
       const payload = JSON.stringify({
-        title: notificationTitle,
-        body: notificationBody,
+        title: sekkiTitle,
+        body: sekkiPeriod,
       });
 
       try {
