@@ -551,9 +551,15 @@ async function sendScheduledNotifications() {
       if (!isValidSubscription(sub)) continue; // 無効な購読情報
       targets++;
 
+      // 二十四節気と七十二候で通知メッセージを分ける
+      const notificationTitle = isSekkiDay ? '二十四節気が変わりました' : '七十二候が変わりました';
+      const notificationBody = isSekkiDay
+        ? `今日から「${sekkiTitle}」です`
+        : `今日から「${sekkiTitle}」です`;
+
       const payload = JSON.stringify({
-        title: '暦のお知らせ',
-        body: `現在の暦は「${sekkiTitle}」です`,
+        title: notificationTitle,
+        body: notificationBody,
       });
 
       try {
@@ -566,7 +572,8 @@ async function sendScheduledNotifications() {
     }
 
     if (targets) {
-      console.log(`[scheduler] 通知送信結果: 成功=${success}, 失敗=${failed}, 対象=${targets}`);
+      const type = isSekkiDay ? '二十四節気' : '七十二候';
+      console.log(`[scheduler] ${type}「${sekkiTitle}」の通知送信結果: 成功=${success}, 失敗=${failed}, 対象=${targets}`);
     }
   } catch (err) {
     console.error('[scheduler] エラー:', err);
