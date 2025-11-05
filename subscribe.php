@@ -55,6 +55,10 @@ if ($rawData) {
                     $subscription['notifyTime'] = $data['notifyTime'];
                     logDebug("既存のエンドポイントの通知時刻を更新: {$data['notifyTime']}");
                 }
+                if (isset($data['notifyFrequency'])) {
+                    $subscription['notifyFrequency'] = $data['notifyFrequency'];
+                    logDebug("既存のエンドポイントの通知頻度を更新: {$data['notifyFrequency']}");
+                }
                 $found = true;
                 break;
             }
@@ -78,6 +82,10 @@ if ($rawData) {
                     // 同じブラウザIDの購読情報を更新
                     $subscription['notifyTime'] = $data['notifyTime'];
                     logDebug("ブラウザID {$browserId} の通知時刻を更新: {$data['notifyTime']}");
+                    if (isset($data['notifyFrequency'])) {
+                        $subscription['notifyFrequency'] = $data['notifyFrequency'];
+                        logDebug("ブラウザID {$browserId} の通知頻度を更新: {$data['notifyFrequency']}");
+                    }
                     $updated = true;
                     break;
                 }
@@ -104,6 +112,9 @@ if ($rawData) {
                 if (isset($data['browserId'])) {
                     $subscriptions[$latestIndex]['browserId'] = $data['browserId'];
                 }
+                if (isset($data['notifyFrequency'])) {
+                    $subscriptions[$latestIndex]['notifyFrequency'] = $data['notifyFrequency'];
+                }
                 logDebug("最新のエンドポイント情報に通知時刻を追加: {$data['notifyTime']}");
                 $updated = true;
             }
@@ -117,11 +128,15 @@ if ($rawData) {
                 'notifyTime' => $data['notifyTime'],
                 'isDummy' => true
             ];
-            
+
             if (isset($data['browserId'])) {
                 $dummySubscription['browserId'] = $data['browserId'];
             }
-            
+
+            if (isset($data['notifyFrequency'])) {
+                $dummySubscription['notifyFrequency'] = $data['notifyFrequency'];
+            }
+
             $subscriptions[] = $dummySubscription;
             logDebug("ダミーのエンドポイントを作成して通知時刻を紐づけ: {$data['notifyTime']}");
         }
