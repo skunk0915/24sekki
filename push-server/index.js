@@ -466,19 +466,19 @@ async function sendScheduledNotifications() {
     let sekkiPeriod = null; // 期間を保存
     let isSekkiDay = false;
     let isKouDay = false;
-    let kouData = null;
-    
+    let currentKou = null; // 現在の七十二候を保存
+
     // 1. 二十四節気を優先してチェック
     const currentSekki = await getCurrentSekki();
     if (!currentSekki) {
       console.error('[scheduler] 現在の節気取得失敗');
       return;
     }
-    
+
     const sekkiMD = currentSekki.start_date; // M/D形式
     const [sekkiMonth, sekkiDay] = sekkiMD.split('/').map(num => num.padStart(2, '0'));
     const formattedSekkiDate = `${sekkiMonth}-${sekkiDay}`;
-    
+
     if (formattedSekkiDate === todayMD) {
       sekkiTitle = currentSekki.name;
       sekkiPeriod = `${currentSekki.start_date}～${currentSekki.end_date}`;
@@ -487,34 +487,72 @@ async function sendScheduledNotifications() {
     } else {
       console.log(`[scheduler] 二十四節気の開始日ではありません (${currentSekki.name} 開始日: ${formattedSekkiDate})`);
     }
-    
-    // 2. 七十二候をチェック（二十四節気がない日のみ）
-    if (!isSekkiDay) {
-      const kouList = loadKouData();
-      if (kouList && kouList.length > 0) {
-        // 今日の七十二候を探す
-        const todayKou = kouList.find(kou => {
-          if (!kou['開始年月日']) return false;
-          // 日付をMM-DD形式に正規化
-          const dateParts = kou['開始年月日'].trim().split(/[\/\-]/);
-          if (dateParts.length !== 2) return false;
-          const kouDate = `${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
-          return kouDate === todayMD;
-        });
 
-        if (todayKou) {
-          sekkiTitle = todayKou['和名'] || todayKou['候名'] || '七十二候';
-          sekkiPeriod = `${todayKou['開始年月日']}～${todayKou['終了年月日']}`;
-          isKouDay = true;
-          console.log(`[scheduler] 七十二候の開始日です: ${todayMD} ${sekkiTitle} (${sekkiPeriod})`);
-        } else {
-          console.log(`[scheduler] 七十二候の開始日ではありません`);
+    // 2. 七十二候をチェック（常に実行して現在の七十二候を特定）
+    const kouList = loadKouData();
+    if (kouList && kouList.length > 0) {
+      // 今日の七十二候の開始日を探す
+      const todayKou = kouList.find(kou => {
+        if (!kou['開始年月日']) return false;
+        // 日付をMM-DD形式に正規化
+        const dateParts = kou['開始年月日'].trim().split(/[\/\-]/);
+        if (dateParts.length !== 2) return false;
+        const kouDate = `${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+        return kouDate === todayMD;
+      });
+
+      if (todayKou && !isSekkiDay) {
+        sekkiTitle = todayKou['和名'] || todayKou['候名'] || '七十二候';
+        sekkiPeriod = `${todayKou['開始年月日']}～${todayKou['終了年月日']}`;
+        isKouDay = true;
+        currentKou = todayKou;
+        console.log(`[scheduler] 七十二候の開始日です: ${todayMD} ${sekkiTitle} (${sekkiPeriod})`);
+      } else if (!isSekkiDay) {
+        // 開始日でない場合、現在進行中の七十二候を探す
+        const today = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
+        console.log(`[scheduler] 現在進行中の七十二候を検索中... 今日: ${today.toISOString().slice(0,10)}`);
+
+        for (const kou of kouList) {
+          if (!kou['開始年月日'] || !kou['終了年月日']) continue;
+
+          // 開始日と終了日をパース
+          const startParts = kou['開始年月日'].trim().split(/[\/\-]/);
+          const endParts = kou['終了年月日'].trim().split(/[\/\-]/);
+          if (startParts.length !== 2 || endParts.length !== 2) continue;
+
+          const startMonth = parseInt(startParts[0]) - 1;
+          const startDay = parseInt(startParts[1]);
+          const endMonth = parseInt(endParts[0]) - 1;
+          const endDay = parseInt(endParts[1]);
+
+          let startDate = new Date(jstNow.getFullYear(), startMonth, startDay);
+          let endDate = new Date(jstNow.getFullYear(), endMonth, endDay);
+
+          // 年をまたぐ場合の処理（終了日が開始日より前の場合）
+          if (endDate < startDate) {
+            // 今日が年末（開始日以降）なら、終了日を翌年に
+            // 今日が年始（終了日以前）なら、開始日を前年に
+            if (today.getMonth() >= startMonth) {
+              endDate = new Date(jstNow.getFullYear() + 1, endMonth, endDay);
+            } else {
+              startDate = new Date(jstNow.getFullYear() - 1, startMonth, startDay);
+            }
+          }
+
+          // 今日が期間内かチェック
+          if (today >= startDate && today <= endDate) {
+            currentKou = kou;
+            console.log(`[scheduler] 現在の七十二候を発見: ${kou['和名'] || kou['候名']} (${kou['開始年月日']}～${kou['終了年月日']})`);
+            break;
+          }
         }
-      } else {
-        console.error('[scheduler] 七十二候データの読み込みに失敗しました');
+
+        if (!currentKou) {
+          console.log(`[scheduler] 警告: 現在の七十二候が見つかりませんでした`);
+        }
       }
     } else {
-      console.log(`[scheduler] 二十四節気の日のため、七十二候のチェックはスキップします`);
+      console.error('[scheduler] 七十二候データの読み込みに失敗しました');
     }
     
     // 定期処理ログ（毎分）
@@ -562,10 +600,23 @@ async function sendScheduledNotifications() {
       let notifyTitle = sekkiTitle;
       let notifyBody = sekkiPeriod;
 
-      // 毎日通知で、開始日でない場合は現在の節気情報を使用
-      if (notifyFrequency === 'daily' && !isSekkiDay && !isKouDay && currentSekki) {
-        notifyTitle = currentSekki.name;
-        notifyBody = `${currentSekki.start_date}～${currentSekki.end_date}`;
+      console.log(`[scheduler] 通知内容決定: 頻度=${notifyFrequency}, 節気日=${isSekkiDay}, 候日=${isKouDay}, currentKou=${currentKou ? 'あり' : 'なし'}`);
+
+      // 毎日通知で、開始日でない場合は現在の七十二候または節気情報を使用
+      if (notifyFrequency === 'daily' && !isSekkiDay && !isKouDay) {
+        if (currentKou) {
+          // 現在の七十二候がある場合は七十二候を優先
+          notifyTitle = currentKou['和名'] || currentKou['候名'] || '七十二候';
+          notifyBody = `${currentKou['開始年月日']}～${currentKou['終了年月日']}`;
+          console.log(`[scheduler] 七十二候を使用: ${notifyTitle} (${notifyBody})`);
+        } else if (currentSekki) {
+          // 七十二候が見つからない場合は二十四節気を使用
+          notifyTitle = currentSekki.name;
+          notifyBody = `${currentSekki.start_date}～${currentSekki.end_date}`;
+          console.log(`[scheduler] 二十四節気を使用: ${notifyTitle} (${notifyBody})`);
+        }
+      } else {
+        console.log(`[scheduler] デフォルト値を使用: ${notifyTitle} (${notifyBody})`);
       }
 
       // シンプルに節気名と期間だけを通知
