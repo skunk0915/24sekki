@@ -558,10 +558,20 @@ async function sendScheduledNotifications() {
 
       targets++;
 
+      // 通知内容を決定
+      let notifyTitle = sekkiTitle;
+      let notifyBody = sekkiPeriod;
+
+      // 毎日通知で、開始日でない場合は現在の節気情報を使用
+      if (notifyFrequency === 'daily' && !isSekkiDay && !isKouDay && currentSekki) {
+        notifyTitle = currentSekki.name;
+        notifyBody = `${currentSekki.start_date}～${currentSekki.end_date}`;
+      }
+
       // シンプルに節気名と期間だけを通知
       const payload = JSON.stringify({
-        title: sekkiTitle,
-        body: sekkiPeriod,
+        title: notifyTitle,
+        body: notifyBody,
       });
 
       try {
@@ -574,8 +584,16 @@ async function sendScheduledNotifications() {
     }
 
     if (targets) {
-      const type = isSekkiDay ? '二十四節気' : '七十二候';
-      console.log(`[scheduler] ${type}「${sekkiTitle}」の通知送信結果: 成功=${success}, 失敗=${failed}, 対象=${targets}`);
+      let type = '定時通知';
+      let name = currentSekki ? currentSekki.name : '不明';
+      if (isSekkiDay) {
+        type = '二十四節気';
+        name = sekkiTitle;
+      } else if (isKouDay) {
+        type = '七十二候';
+        name = sekkiTitle;
+      }
+      console.log(`[scheduler] ${type}「${name}」の通知送信結果: 成功=${success}, 失敗=${failed}, 対象=${targets}`);
     }
   } catch (err) {
     console.error('[scheduler] エラー:', err);
