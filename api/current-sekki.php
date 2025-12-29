@@ -19,9 +19,13 @@ try {
         throw new Exception('現在の節気が見つかりません');
     }
     
+    $kou_list = load_kou_data('../72kou.csv');
+    $today_kou = get_today_kou($kou_list);
+
     $response = [
         'id' => array_search($today_sekki, $sekki_list),
         'name' => $today_sekki['節気名'],
+        'kou_name' => $today_kou['和名'] ?? '',
         'start_date' => $today_sekki['開始年月日'],
         'end_date' => $today_sekki['終了年月日']
     ];

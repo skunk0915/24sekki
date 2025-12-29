@@ -35,13 +35,13 @@ function isValidSubscription(subscription) {
   if (!subscription || typeof subscription !== 'object') {
     return false;
   }
-  
-  if (!subscription.endpoint || 
-      typeof subscription.endpoint !== 'string' ||
-      subscription.endpoint.startsWith('dummy_endpoint_')) {
+
+  if (!subscription.endpoint ||
+    typeof subscription.endpoint !== 'string' ||
+    subscription.endpoint.startsWith('dummy_endpoint_')) {
     return false;
   }
-  
+
   // keys はブラウザによって含まれない場合がある（iOS Safari など）。
   // endpoint が有効なら keys の有無は問わない。
   return true;
@@ -53,7 +53,7 @@ function loadKouData() {
     const fs = require('fs');
     const path = require('path');
     const results = [];
-    
+
     // プロジェクトルートの72kou.csvを探索して読み込む
     const candidatePaths = [
       path.join(__dirname, '../72kou.csv'),      // 通常: push-server 上位1階層
@@ -64,38 +64,38 @@ function loadKouData() {
     // 最初に存在するパスを採用
     const csvPath = candidatePaths.find(p => fs.existsSync(p));
     console.log(`[scheduler] 七十二候CSV検索パス: ${candidatePaths.join(' | ')}`);
-    
+
     if (!csvPath) {
       console.error('[scheduler] 七十二候CSVファイルが見つかりません');
       return null;
     }
-    
+
     // ファイルを一度に読み込む
     const fileContent = fs.readFileSync(csvPath, 'utf8');
-    
+
     // 改行コードを統一してから行に分割
     const lines = fileContent.replace(/\r\n?/g, '\n').split('\n');
     if (lines.length === 0) {
       console.error('[scheduler] CSVファイルが空です');
       return null;
     }
-    
+
     // ヘッダー行を取得（BOMを除去）
     const headers = lines[0].split(',').map(h => h.trim().replace(/^\ufeff/, ''));
-    
+
     // データ行を処理（複数行にまたがる値を考慮）
     let currentRow = [];
     let inQuotes = false;
     let currentValue = '';
-    
+
     // ヘッダー行を除くすべての行を処理
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
-      let startIndex = 0;
-      
+      if (!line && i === lines.length - 1) continue;
+
       for (let j = 0; j < line.length; j++) {
         const char = line[j];
-        
+
         // ダブルクォーテーションの処理
         if (char === '"') {
           if (inQuotes && line[j + 1] === '"') {
@@ -113,13 +113,13 @@ function loadKouData() {
           currentValue += char;
         }
       }
-      
+
       // 行末の処理
       if (!inQuotes) {
         // 現在の値を追加
         currentRow.push(currentValue);
         currentValue = '';
-        
+
         // 行が完了したらエントリを追加
         if (currentRow.length >= headers.length) {
           const entry = {};
@@ -134,7 +134,7 @@ function loadKouData() {
         currentValue += '\n';
       }
     }
-    
+
     console.log(`[scheduler] 七十二候データを読み込みました: ${results.length}件`);
     return results;
   } catch (error) {
@@ -163,61 +163,46 @@ async function sendNotificationToAll(title, body) {
   try {
     console.log(`通知を送信します: ${title} - ${body}`);
     console.log('購読情報URL:', process.env.SUBSCRIPTIONS_URL);
-    
+
     const response = await fetch(process.env.SUBSCRIPTIONS_URL);
     console.log('購読情報取得レスポンス:', response.status, response.statusText);
-    
+
     const txt = await response.text();
     console.log('購読情報データ長:', txt.length);
-    
+
     if (!txt || txt.trim() === '') {
       console.log('購読者情報がありません');
       return { success: 0, failed: 0, error: '購読者情報がありません' };
     }
-    
+
     const lines = txt.trim().split('\n');
     console.log(`${lines.length}人の購読者に通知を送信します`);
-    
-    // 最初の購読情報をログに記録（デバッグ用）
-    if (lines.length > 0) {
-      try {
-        const firstSubscription = JSON.parse(lines[0]);
-        const isValid = isValidSubscription(firstSubscription);
-        console.log('最初の購読情報サンプル:', {
-          endpoint: firstSubscription.endpoint ? (firstSubscription.endpoint.startsWith('dummy_endpoint_') ? 'ダミーエンドポイント' : '有効なエンドポイント') : 'エンドポイントなし',
-          keys: firstSubscription.keys ? Object.keys(firstSubscription.keys) : 'keysなし',
-          isValid: isValid
-        });
-      } catch (e) {
-        console.error('購読情報の解析エラー:', e);
-      }
-    }
-    
+
     const payload = JSON.stringify({ title, body });
     console.log('送信するペイロード:', payload);
-    
+
     let successCount = 0;
     let failedCount = 0;
     let validCount = 0;
     let errors = [];
-    
+
     for (let i = 0; i < lines.length; i++) {
       try {
         const line = lines[i];
         const subscription = JSON.parse(line);
-        
+
         if (!isValidSubscription(subscription)) {
-          console.log(`購読者 ${i+1}/${lines.length} をスキップ: 無効な購読情報`);
+          console.log(`購読者 ${i + 1}/${lines.length} をスキップ: 無効な購読情報`);
           continue;
         }
         validCount++;
-        
-        console.log(`購読者 ${i+1}/${lines.length} に通知を送信中...`);
+
+        console.log(`購読者 ${i + 1}/${lines.length} に通知を送信中...`);
         await webpush.sendNotification(subscription, payload);
-        console.log(`購読者 ${i+1} への通知送信成功`);
+        console.log(`購読者 ${i + 1} への通知送信成功`);
         successCount++;
       } catch (err) {
-        console.error(`購読者 ${i+1} への通知失敗:`, err);
+        console.error(`購読者 ${i + 1} への通知失敗:`, err);
         failedCount++;
         errors.push({
           index: i,
@@ -227,7 +212,7 @@ async function sendNotificationToAll(title, body) {
         });
       }
     }
-    
+
     console.log(`通知送信結果: 成功=${successCount}, 失敗=${failedCount}, 有効購読=${validCount}`);
     return { success: successCount, failed: failedCount, errors: errors.length > 0 ? errors : undefined };
   } catch (err) {
@@ -243,10 +228,10 @@ app.get('/send', async (req, res) => {
     if (!currentSekki) {
       return res.status(500).send('暦情報の取得に失敗しました');
     }
-    
-    const title = '暦のお知らせ';
-    const body = `現在の暦は「${currentSekki.name}」です（${currentSekki.start_date}～${currentSekki.end_date}）`;
-    
+
+    const title = currentSekki.name;
+    const body = `${currentSekki.name}：${currentSekki.kou_name || ''}`;
+
     const result = await sendNotificationToAll(title, body);
     res.send(`通知送信完了: 成功=${result.success}, 失敗=${result.failed}`);
   } catch (err) {
@@ -260,18 +245,18 @@ app.post('/send', async (req, res) => {
   console.log('POSTリクエストを受信しました:', req.body);
   try {
     const { subscription } = req.body;
-    
+
     if (!subscription) {
       return res.status(400).json({ error: '購読情報が必要です' });
     }
-    
+
     // 購読情報の検証のみを行い、テスト通知は送信しない
     if (!isValidSubscription(subscription)) {
       return res.status(400).json({ error: '無効な購読情報です' });
     }
-    
+
     console.log('有効な購読情報を受信しました');
-    
+
     return res.status(200).json({ success: true, message: '購読情報を受け付けました' });
   } catch (err) {
     console.error('購読処理エラー:', err);
@@ -286,14 +271,14 @@ app.get('/check-sekki-change', async (req, res) => {
     if (!currentSekki) {
       return res.status(500).json({ error: '暦情報の取得に失敗しました' });
     }
-    
+
     const isChanged = previousSekki && previousSekki.id !== currentSekki.id;
     previousSekki = currentSekki;
-    
+
     if (isChanged) {
-      const title = '暦が変わりました';
-      const body = `新しい暦は「${currentSekki.name}」です（${currentSekki.start_date}～${currentSekki.end_date}）`;
-      
+      const title = currentSekki.name;
+      const body = `${currentSekki.name}：${currentSekki.kou_name || ''}`;
+
       const result = await sendNotificationToAll(title, body);
       return res.json({
         changed: true,
@@ -302,7 +287,7 @@ app.get('/check-sekki-change', async (req, res) => {
         notification: result
       });
     }
-    
+
     return res.json({
       changed: false,
       current: currentSekki
@@ -317,13 +302,13 @@ app.get('/check-sekki-change', async (req, res) => {
 app.get('/test-notification-now', async (req, res) => {
   try {
     console.log('即時テスト通知を送信します');
-    
+
     const title = 'テスト通知';
     const body = `これはテスト通知です - ${new Date().toLocaleString()}`;
-    
+
     // 通知を送信
     const result = await sendNotificationToAll(title, body);
-    
+
     return res.json({
       status: 'sent',
       message: 'テスト通知を送信しました',
@@ -345,13 +330,13 @@ app.get('/check-subscriptions', async (req, res) => {
   try {
     console.log('購読情報を確認します');
     console.log('購読情報URL:', process.env.SUBSCRIPTIONS_URL);
-    
+
     const response = await fetch(process.env.SUBSCRIPTIONS_URL);
     console.log('購読情報取得レスポンス:', response.status, response.statusText);
-    
+
     const txt = await response.text();
     console.log('購読情報データ長:', txt.length);
-    
+
     if (!txt || txt.trim() === '') {
       return res.json({
         status: 'empty',
@@ -359,10 +344,10 @@ app.get('/check-subscriptions', async (req, res) => {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     const lines = txt.trim().split('\n');
     const subscriptions = [];
-    
+
     for (let i = 0; i < lines.length; i++) {
       try {
         const subscription = JSON.parse(lines[i]);
@@ -383,7 +368,7 @@ app.get('/check-subscriptions', async (req, res) => {
         });
       }
     }
-    
+
     return res.json({
       status: 'success',
       count: lines.length,
@@ -408,19 +393,19 @@ app.get('/test-next-sekki', async (req, res) => {
     if (!currentSekki) {
       return res.status(500).json({ error: '暦情報の取得に失敗しました' });
     }
-    
+
     // 次の暦のデータを取得するためのAPIを呼び出す
     const nextSekkiResponse = await fetch(`https://mizy.sakura.ne.jp/72kou/api/next-sekki.php?current_id=${currentSekki.id}`);
     if (!nextSekkiResponse.ok) {
       return res.status(500).json({ error: `次の暦情報の取得に失敗しました: ${nextSekkiResponse.status}` });
     }
-    
+
     const nextSekki = await nextSekkiResponse.json();
-    
+
     // 2分後に通知を送信するタイマーを設定
     const waitMinutes = 2;
     const waitMs = waitMinutes * 60 * 1000;
-    
+
     res.json({
       status: 'scheduled',
       message: `${waitMinutes}分後に「${nextSekki.name}」に変わったとして通知を送信します`,
@@ -428,25 +413,25 @@ app.get('/test-next-sekki', async (req, res) => {
       nextSekki: nextSekki,
       scheduledTime: new Date(Date.now() + waitMs).toLocaleString()
     });
-    
+
     // 指定時間後に通知を送信
     setTimeout(async () => {
       try {
         console.log(`テスト: 暦が変わりました: ${currentSekki.name} → ${nextSekki.name}`);
-        
-        const title = '暦が変わりました';
-        const body = `新しい暦は「${nextSekki.name}」です（${nextSekki.start_date}～${nextSekki.end_date}）`;
-        
+
+        const title = nextSekki.name;
+        const body = `${nextSekki.name}：${nextSekki.kou_name || ''}`;
+
         const result = await sendNotificationToAll(title, body);
         console.log(`テスト通知結果: 成功=${result.success}, 失敗=${result.failed}`);
-        
+
         // テスト後は元の暦に戻す
         previousSekki = currentSekki;
       } catch (error) {
         console.error('テスト通知送信中にエラーが発生しました:', error);
       }
     }, waitMs);
-    
+
   } catch (err) {
     console.error('テスト通知の設定中にエラーが発生しました:', err);
     return res.status(500).json({ error: err.message });
@@ -460,15 +445,15 @@ async function sendScheduledNotifications() {
     const hh = String(jstNow.getHours()).padStart(2, '0');
     const mm = String(jstNow.getMinutes()).padStart(2, '0');
     const currentTime = `${hh}:${mm}`;
- 
-        const todayMD = `${String(jstNow.getMonth() + 1).padStart(2, '0')}-${String(jstNow.getDate()).padStart(2, '0')}`; // MM-DD形式
+
+    const todayMD = `${String(jstNow.getMonth() + 1).padStart(2, '0')}-${String(jstNow.getDate()).padStart(2, '0')}`; // MM-DD形式
     let sekkiTitle = null;
-    let sekkiPeriod = null; // 期間を保存
+    let sekkiKouBody = null; // 本文用
     let isSekkiDay = false;
     let isKouDay = false;
     let currentKou = null; // 現在の七十二候を保存
 
-    // 1. 二十四節気を優先してチェック
+    // 現在の暦をAPIから取得
     const currentSekki = await getCurrentSekki();
     if (!currentSekki) {
       console.error('[scheduler] 現在の節気取得失敗');
@@ -481,9 +466,9 @@ async function sendScheduledNotifications() {
 
     if (formattedSekkiDate === todayMD) {
       sekkiTitle = currentSekki.name;
-      sekkiPeriod = `${currentSekki.start_date}～${currentSekki.end_date}`;
+      sekkiKouBody = `${currentSekki.name}：${currentSekki.kou_name || ''}`;
       isSekkiDay = true;
-      console.log(`[scheduler] 二十四節気の開始日です: ${formattedSekkiDate} ${sekkiTitle} (${sekkiPeriod})`);
+      console.log(`[scheduler] 二十四節気の開始日です: ${formattedSekkiDate} ${sekkiTitle}`);
     } else {
       console.log(`[scheduler] 二十四節気の開始日ではありません (${currentSekki.name} 開始日: ${formattedSekkiDate})`);
     }
@@ -502,16 +487,14 @@ async function sendScheduledNotifications() {
       });
 
       if (todayKou && !isSekkiDay) {
-        sekkiTitle = todayKou['和名'] || todayKou['候名'] || '七十二候';
-        sekkiPeriod = `${todayKou['開始年月日']}～${todayKou['終了年月日']}`;
+        sekkiTitle = currentSekki.name; // タイトルは常に二十四節気
+        sekkiKouBody = `${currentSekki.name}：${todayKou['和名'] || todayKou['候名'] || ''}`;
         isKouDay = true;
         currentKou = todayKou;
-        console.log(`[scheduler] 七十二候の開始日です: ${todayMD} ${sekkiTitle} (${sekkiPeriod})`);
+        console.log(`[scheduler] 七十二候の開始日です: ${todayMD} ${todayKou['和名']}`);
       } else if (!isSekkiDay) {
         // 開始日でない場合、現在進行中の七十二候を探す
         const today = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
-        console.log(`[scheduler] 現在進行中の七十二候を検索中... 今日: ${today.toISOString().slice(0,10)}`);
-
         for (const kou of kouList) {
           if (!kou['開始年月日'] || !kou['終了年月日']) continue;
 
@@ -528,10 +511,7 @@ async function sendScheduledNotifications() {
           let startDate = new Date(jstNow.getFullYear(), startMonth, startDay);
           let endDate = new Date(jstNow.getFullYear(), endMonth, endDay);
 
-          // 年をまたぐ場合の処理（終了日が開始日より前の場合）
           if (endDate < startDate) {
-            // 今日が年末（開始日以降）なら、終了日を翌年に
-            // 今日が年始（終了日以前）なら、開始日を前年に
             if (today.getMonth() >= startMonth) {
               endDate = new Date(jstNow.getFullYear() + 1, endMonth, endDay);
             } else {
@@ -539,22 +519,14 @@ async function sendScheduledNotifications() {
             }
           }
 
-          // 今日が期間内かチェック
           if (today >= startDate && today <= endDate) {
             currentKou = kou;
-            console.log(`[scheduler] 現在の七十二候を発見: ${kou['和名'] || kou['候名']} (${kou['開始年月日']}～${kou['終了年月日']})`);
             break;
           }
         }
-
-        if (!currentKou) {
-          console.log(`[scheduler] 警告: 現在の七十二候が見つかりませんでした`);
-        }
       }
-    } else {
-      console.error('[scheduler] 七十二候データの読み込みに失敗しました');
     }
-    
+
     // 定期処理ログ（毎分）
     console.log(`[scheduler] 現在時刻(JST): ${currentTime}`);
 
@@ -585,41 +557,19 @@ async function sendScheduledNotifications() {
       if (!sub.notifyTime || sub.notifyTime !== currentTime) continue; // 時刻が一致しない
       if (!isValidSubscription(sub)) continue; // 無効な購読情報
 
-      // 通知頻度の確認（デフォルトは節気・候変更日のみ）
       const notifyFrequency = sub.notifyFrequency || 'sekki-only';
 
       // 節気・候変更日のみの設定の場合、開始日でない場合はスキップ
       if (notifyFrequency === 'sekki-only' && !isSekkiDay && !isKouDay) {
-        console.log(`[scheduler] 購読者 ${i+1}: 節気・候変更日のみ設定のため、今日はスキップ`);
         continue;
       }
 
       targets++;
 
       // 通知内容を決定
-      let notifyTitle = sekkiTitle;
-      let notifyBody = sekkiPeriod;
+      let notifyTitle = currentSekki.name;
+      let notifyBody = `${currentSekki.name}：${(currentKou ? (currentKou['和名'] || currentKou['候名']) : currentSekki.kou_name) || ''}`;
 
-      console.log(`[scheduler] 通知内容決定: 頻度=${notifyFrequency}, 節気日=${isSekkiDay}, 候日=${isKouDay}, currentKou=${currentKou ? 'あり' : 'なし'}`);
-
-      // 毎日通知で、開始日でない場合は現在の七十二候または節気情報を使用
-      if (notifyFrequency === 'daily' && !isSekkiDay && !isKouDay) {
-        if (currentKou) {
-          // 現在の七十二候がある場合は七十二候を優先
-          notifyTitle = currentKou['和名'] || currentKou['候名'] || '七十二候';
-          notifyBody = `${currentKou['開始年月日']}～${currentKou['終了年月日']}`;
-          console.log(`[scheduler] 七十二候を使用: ${notifyTitle} (${notifyBody})`);
-        } else if (currentSekki) {
-          // 七十二候が見つからない場合は二十四節気を使用
-          notifyTitle = currentSekki.name;
-          notifyBody = `${currentSekki.start_date}～${currentSekki.end_date}`;
-          console.log(`[scheduler] 二十四節気を使用: ${notifyTitle} (${notifyBody})`);
-        }
-      } else {
-        console.log(`[scheduler] デフォルト値を使用: ${notifyTitle} (${notifyBody})`);
-      }
-
-      // シンプルに節気名と期間だけを通知
       const payload = JSON.stringify({
         title: notifyTitle,
         body: notifyBody,
@@ -635,16 +585,7 @@ async function sendScheduledNotifications() {
     }
 
     if (targets) {
-      let type = '定時通知';
-      let name = currentSekki ? currentSekki.name : '不明';
-      if (isSekkiDay) {
-        type = '二十四節気';
-        name = sekkiTitle;
-      } else if (isKouDay) {
-        type = '七十二候';
-        name = sekkiTitle;
-      }
-      console.log(`[scheduler] ${type}「${name}」の通知送信結果: 成功=${success}, 失敗=${failed}, 対象=${targets}`);
+      console.log(`[scheduler] 通知送信結果: 成功=${success}, 失敗=${failed}, 対象=${targets}`);
     }
   } catch (err) {
     console.error('[scheduler] エラー:', err);
@@ -663,23 +604,23 @@ cron.schedule('0 0 * * *', async () => {
       console.error('暦情報の取得に失敗しました');
       return;
     }
-    
+
     // 初回実行時はpreviousSekkiがnullなので通知しない
     if (previousSekki && previousSekki.id !== currentSekki.id) {
       console.log(`暦が変わりました: ${previousSekki.name} → ${currentSekki.name}`);
-      
-      const title = '暦が変わりました';
-      const body = `新しい暦は「${currentSekki.name}」です（${currentSekki.start_date}～${currentSekki.end_date}）`;
-      
+
+      const title = currentSekki.name;
+      const body = `${currentSekki.name}：${currentSekki.kou_name || ''}`;
+
       const result = await sendNotificationToAll(title, body);
       console.log(`通知結果: 成功=${result.success}, 失敗=${result.failed}`);
     } else {
       console.log(`暦は変わっていません: ${currentSekki.name}`);
     }
-    
+
     // 現在の暦を保存
     previousSekki = currentSekki;
-  } catch (error) {  
+  } catch (error) {
     console.error('暦変更チェック中にエラーが発生しました:', error);
   }
 });
@@ -724,16 +665,16 @@ app.post('/notify', async (req, res) => {
   try {
     console.log('購読情報検証リクエストを受信しました:', req.body);
     const { subscription } = req.body;
-    
+
     if (!subscription) {
       return res.status(400).json({ error: '購読情報が必要です' });
     }
-    
+
     // 購読情報の検証のみを行い、テスト通知は送信しない
     if (!isValidSubscription(subscription)) {
       return res.status(400).json({ error: '無効な購読情報です' });
     }
-    
+
     console.log('購読情報の検証に成功しました');
     return res.status(200).json({ success: true, message: '有効な購読情報です' });
   } catch (err) {
