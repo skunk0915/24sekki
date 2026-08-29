@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koyomi-cache-v11'; // バージョン更新
+const CACHE_NAME = 'koyomi-cache-v12'; // バージョン更新
 const urlsToCache = [
   './',
   './index.php',
@@ -114,12 +114,38 @@ self.addEventListener('push', function (event) {
   try {
     data = event.data.json();
   } catch (e) {
-    data = { title: '通知', body: '暦が変わりました' };
+    data = { title: '二十四節気・七十二候', body: '暦が変わりました' };
   }
+  
+  const title = data.title || '二十四節気・七十二候';
+  const options = {
+    body: data.body || '',
+    icon: data.icon || './img/favicon/icon-192.png',
+    badge: data.badge || './img/favicon/favicon-32.png',
+    data: data.data || { url: './' }
+  };
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/img/favicon/icon-192.png', // 必要に応じてパス調整
+    self.registration.showNotification(title, options)
+  );
+});
+
+// 通知クリック時のイベント
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const urlToOpen = (event.notification.data && event.notification.data.url) ? event.notification.data.url : './';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (let i = 0; i < clientList.length; i++) {
+        let client = clientList[i];
+        if (client.url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
     })
   );
 });

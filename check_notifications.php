@@ -26,6 +26,29 @@ date_default_timezone_set('Asia/Tokyo');
 // ログ出力関数
 function logMessage($message) {
     $logFile = __DIR__ . '/notification_log.txt';
+    $maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (file_exists($logFile) && filesize($logFile) > $maxSize) {
+        $fp = @fopen($logFile, 'r+');
+        if ($fp && flock($fp, LOCK_EX)) {
+            $size = filesize($logFile);
+            if ($size > $maxSize) {
+                $keepSize = (int)($maxSize / 2);
+                fseek($fp, -$keepSize, SEEK_END);
+                $data = fread($fp, $keepSize);
+                $newlinePos = strpos($data, "\n");
+                if ($newlinePos !== false) {
+                    $data = substr($data, $newlinePos + 1);
+                }
+                ftruncate($fp, 0);
+                rewind($fp);
+                fwrite($fp, "[LOG TRUNCATED AT 10MB LIMIT]\n" . $data);
+            }
+            flock($fp, LOCK_UN);
+            fclose($fp);
+        }
+    }
+    
     $timestamp = date('Y-m-d H:i:s');
     file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND | LOCK_EX);
 }
@@ -250,8 +273,13 @@ foreach ($subscriptions as $subscription) {
             $body = "本日から{$sekkiInfo['name']}（{$sekkiInfo['reading']}）です。";
         } else {
             // 節気変更日でない場合（毎日通知の場合）
-            $title = "本日の暦";
-            $body = "今日も良い一日をお過ごしください。";
+            $kou_list = load_kou_data(__DIR__ . '/72kou.csv');
+            $sekki_list = load_sekki_data(__DIR__ . '/24sekki.csv');
+            $today_kou = get_today_kou($kou_list);
+            $today_sekki = get_today_sekki($sekki_list);
+            $title = $today_sekki['節気名'] ?? '本日の暦';
+            $kouName = $today_kou['和名'] ?? $today_kou['候名'] ?? '';
+            $body = ($today_sekki['節気名'] ?? '') . ($kouName ? '：' . $kouName : '');
         }
 
         // 擬似的な購読情報の場合は通知を送信しない

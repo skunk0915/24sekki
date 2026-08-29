@@ -5,6 +5,7 @@ const cors = require('cors');
 const cron = require('node-cron');
 require('dotenv').config();
 const fs = require('fs');
+const path = require('path');
 const config = require('./config.json');
 
 // Expressアプリの初期化
@@ -16,6 +17,74 @@ app.use(cors({
   allowedHeaders: ['Content-Type']
 }));
 const PORT = process.env.PORT || 3000;
+
+// 日本時間（JST）の日時情報を正確に取得する関数
+function getJSTInfo() {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  const parts = formatter.formatToParts(now);
+  const map = {};
+  for (const part of parts) {
+    map[part.type] = part.value;
+  }
+  return {
+    year: parseInt(map.year, 10),
+    month: parseInt(map.month, 10),
+    day: parseInt(map.day, 10),
+    currentTime: `${map.hour}:${map.minute}`,
+    todayMD: `${map.month}-${map.day}`,
+    jstDate: new Date(Date.UTC(parseInt(map.year, 10), parseInt(map.month, 10) - 1, parseInt(map.day, 10)))
+  };
+}
+
+// 購読情報テキストを取得する関数（ローカルファイル優先）
+async function getSubscriptionsText() {
+  const localFile = path.join(__dirname, '../subscriptions.txt');
+  if (fs.existsSync(localFile)) {
+    try {
+      return fs.readFileSync(localFile, 'utf8');
+    } catch (e) {
+      console.error('ローカル subscriptions.txt 読み込みエラー:', e.message);
+    }
+  }
+  if (process.env.SUBSCRIPTIONS_URL) {
+    try {
+      const response = await fetch(process.env.SUBSCRIPTIONS_URL);
+      if (response.ok) {
+        return await response.text();
+      }
+    } catch (e) {
+      console.error('SUBSCRIPTIONS_URL 取得エラー:', e.message);
+    }
+  }
+  return '';
+}
+
+// 重複送信防止キャッシュ（2分以内・同一時刻の重複配信を防止）
+const recentPushMap = new Map();
+function isDuplicateSend(endpoint, timeKey) {
+  const key = `${endpoint}_${timeKey}`;
+  const now = Date.now();
+  if (recentPushMap.has(key) && (now - recentPushMap.get(key) < 120000)) {
+    return true;
+  }
+  recentPushMap.set(key, now);
+  if (recentPushMap.size > 200) {
+    for (const [k, v] of recentPushMap.entries()) {
+      if (now - v > 300000) recentPushMap.delete(k);
+    }
+  }
+  return false;
+}
 
 // 前日の暦情報を保存する変数
 let previousSekki = null;
@@ -146,7 +215,8 @@ function loadKouData() {
 // 暦情報を取得する関数
 async function getCurrentSekki() {
   try {
-    const response = await fetch('https://mizy.sakura.ne.jp/72kou/api/current-sekki.php');
+    const apiBaseUrl = process.env.API_BASE_URL || 'https://72kou.133.18.144.38.sslip.io/api';
+    const response = await fetch(`${apiBaseUrl}/current-sekki.php`);
     if (!response.ok) {
       throw new Error(`API応答エラー: ${response.status}`);
     }
@@ -162,13 +232,7 @@ async function getCurrentSekki() {
 async function sendNotificationToAll(title, body) {
   try {
     console.log(`通知を送信します: ${title} - ${body}`);
-    console.log('購読情報URL:', process.env.SUBSCRIPTIONS_URL);
-
-    const response = await fetch(process.env.SUBSCRIPTIONS_URL);
-    console.log('購読情報取得レスポンス:', response.status, response.statusText);
-
-    const txt = await response.text();
-    console.log('購読情報データ長:', txt.length);
+    const txt = await getSubscriptionsText();
 
     if (!txt || txt.trim() === '') {
       console.log('購読者情報がありません');
@@ -178,8 +242,13 @@ async function sendNotificationToAll(title, body) {
     const lines = txt.trim().split('\n');
     console.log(`${lines.length}人の購読者に通知を送信します`);
 
-    const payload = JSON.stringify({ title, body });
-    console.log('送信するペイロード:', payload);
+    const payload = JSON.stringify({
+      title: title || '二十四節気・七十二候',
+      body: body || '',
+      icon: '/img/favicon/icon-192.png',
+      badge: '/img/favicon/favicon-32.png',
+      data: { url: '/' }
+    });
 
     let successCount = 0;
     let failedCount = 0;
@@ -395,7 +464,8 @@ app.get('/test-next-sekki', async (req, res) => {
     }
 
     // 次の暦のデータを取得するためのAPIを呼び出す
-    const nextSekkiResponse = await fetch(`https://mizy.sakura.ne.jp/72kou/api/next-sekki.php?current_id=${currentSekki.id}`);
+    const apiBaseUrl = process.env.API_BASE_URL || 'https://72kou.133.18.144.38.sslip.io/api';
+    const nextSekkiResponse = await fetch(`${apiBaseUrl}/next-sekki.php?current_id=${currentSekki.id}`);
     if (!nextSekkiResponse.ok) {
       return res.status(500).json({ error: `次の暦情報の取得に失敗しました: ${nextSekkiResponse.status}` });
     }
@@ -441,12 +511,7 @@ app.get('/test-next-sekki', async (req, res) => {
 // 時刻指定通知を送信する関数
 async function sendScheduledNotifications() {
   try {
-    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000); // JST
-    const hh = String(jstNow.getHours()).padStart(2, '0');
-    const mm = String(jstNow.getMinutes()).padStart(2, '0');
-    const currentTime = `${hh}:${mm}`;
-
-    const todayMD = `${String(jstNow.getMonth() + 1).padStart(2, '0')}-${String(jstNow.getDate()).padStart(2, '0')}`; // MM-DD形式
+    const { currentTime, todayMD, jstDate } = getJSTInfo();
     let sekkiTitle = null;
     let sekkiKouBody = null; // 本文用
     let isSekkiDay = false;
@@ -494,7 +559,7 @@ async function sendScheduledNotifications() {
         console.log(`[scheduler] 七十二候の開始日です: ${todayMD} ${todayKou['和名']}`);
       } else if (!isSekkiDay) {
         // 開始日でない場合、現在進行中の七十二候を探す
-        const today = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
+        const today = jstDate;
         for (const kou of kouList) {
           if (!kou['開始年月日'] || !kou['終了年月日']) continue;
 
@@ -503,19 +568,19 @@ async function sendScheduledNotifications() {
           const endParts = kou['終了年月日'].trim().split(/[\/\-]/);
           if (startParts.length !== 2 || endParts.length !== 2) continue;
 
-          const startMonth = parseInt(startParts[0]) - 1;
-          const startDay = parseInt(startParts[1]);
-          const endMonth = parseInt(endParts[0]) - 1;
-          const endDay = parseInt(endParts[1]);
+          const startMonth = parseInt(startParts[0], 10) - 1;
+          const startDay = parseInt(startParts[1], 10);
+          const endMonth = parseInt(endParts[0], 10) - 1;
+          const endDay = parseInt(endParts[1], 10);
 
-          let startDate = new Date(jstNow.getFullYear(), startMonth, startDay);
-          let endDate = new Date(jstNow.getFullYear(), endMonth, endDay);
+          let startDate = new Date(Date.UTC(today.getUTCFullYear(), startMonth, startDay));
+          let endDate = new Date(Date.UTC(today.getUTCFullYear(), endMonth, endDay));
 
           if (endDate < startDate) {
-            if (today.getMonth() >= startMonth) {
-              endDate = new Date(jstNow.getFullYear() + 1, endMonth, endDay);
+            if (today.getUTCMonth() >= startMonth) {
+              endDate = new Date(Date.UTC(today.getUTCFullYear() + 1, endMonth, endDay));
             } else {
-              startDate = new Date(jstNow.getFullYear() - 1, startMonth, startDay);
+              startDate = new Date(Date.UTC(today.getUTCFullYear() - 1, startMonth, startDay));
             }
           }
 
@@ -530,12 +595,7 @@ async function sendScheduledNotifications() {
     // 定期処理ログ（毎分）
     console.log(`[scheduler] 現在時刻(JST): ${currentTime}`);
 
-    const response = await fetch(process.env.SUBSCRIPTIONS_URL);
-    if (!response.ok) {
-      console.error('[scheduler] 購読情報取得エラー:', response.statusText);
-      return;
-    }
-    const txt = await response.text();
+    const txt = await getSubscriptionsText();
     if (!txt || txt.trim() === '') {
       console.log('[scheduler] 購読者なし');
       return;
@@ -564,6 +624,11 @@ async function sendScheduledNotifications() {
         continue;
       }
 
+      if (isDuplicateSend(sub.endpoint, currentTime)) {
+        console.log(`[scheduler] 重複送信スキップ: ${sub.endpoint.substring(0, 30)}...`);
+        continue;
+      }
+
       targets++;
 
       // 通知内容を決定
@@ -573,11 +638,15 @@ async function sendScheduledNotifications() {
       const payload = JSON.stringify({
         title: notifyTitle,
         body: notifyBody,
+        icon: '/img/favicon/icon-192.png',
+        badge: '/img/favicon/favicon-32.png',
+        data: { url: '/' }
       });
 
       try {
         await webpush.sendNotification(sub, payload);
         success++;
+        console.log(`[scheduler] 通知送信成功 (${sub.notifyTime}): ${notifyTitle}`);
       } catch (err) {
         failed++;
         console.error('[scheduler] 通知送信失敗:', err.message);
@@ -651,7 +720,6 @@ app.get('/test', (req, res) => {
 // サーバー起動用エンドポイント（通知の5分前に呼び出される）
 app.get('/wake', (req, res) => {
   console.log('サーバー起動リクエストを受信しました:', new Date().toLocaleString());
-  // 起動直後にスケジュールチェックを即実行
   sendScheduledNotifications();
   res.json({
     status: 'ok',
@@ -660,25 +728,35 @@ app.get('/wake', (req, res) => {
   });
 });
 
-// 指定された購読者の情報を検証するエンドポイント
+// 指定された購読者に通知を送信するエンドポイント
 app.post('/notify', async (req, res) => {
   try {
-    console.log('購読情報検証リクエストを受信しました:', req.body);
-    const { subscription } = req.body;
+    console.log('通知送信リクエストを受信しました:', req.body);
+    const { subscription, title, body, icon, badge, data } = req.body;
 
     if (!subscription) {
       return res.status(400).json({ error: '購読情報が必要です' });
     }
 
-    // 購読情報の検証のみを行い、テスト通知は送信しない
     if (!isValidSubscription(subscription)) {
       return res.status(400).json({ error: '無効な購読情報です' });
     }
 
-    console.log('購読情報の検証に成功しました');
-    return res.status(200).json({ success: true, message: '有効な購読情報です' });
+    const payload = JSON.stringify({
+      title: title || '二十四節気・七十二候',
+      body: body || '暦が変わりました',
+      icon: icon || '/img/favicon/icon-192.png',
+      badge: badge || '/img/favicon/favicon-32.png',
+      data: data || { url: '/' }
+    });
+
+    console.log(`プッシュ通知を送信します: ${payload}`);
+    const result = await webpush.sendNotification(subscription, payload);
+    console.log(`プッシュ通知送信成功: statusCode=${result.statusCode}`);
+
+    return res.status(200).json({ success: true, message: '通知を送信しました', statusCode: result.statusCode });
   } catch (err) {
-    console.error('購読情報検証エラー:', err);
+    console.error('通知送信エラー:', err);
     return res.status(500).json({ error: err.message });
   }
 });

@@ -9,3 +9,29 @@
 2025-11-05 10:52 要求：通知が来ない問題調査と修正 処理結果：subscribe.phpでnotifyFrequency保存漏れを修正し通知頻度が正しく反映されるように改善
 2025-11-05 10:56 要求：毎日通知が来ない問題を修正 処理結果：毎日通知時にsekkiTitleがnullになる問題を修正し現在の節気情報を使用するように改善
 2025-11-05 13:45 要求：通知内容が常に二十四節気になる問題を修正 処理結果：年跨ぎ対応と詳細ログ追加で七十二候優先表示ロジックを修正
+
+2026-08-30 06:58:00
+USER: カゴヤはrenderとか外部使わずに自身でプッシュ通知システム完結してるか。じゃあそうして。あと今カゴヤにある方とローカルにある昔のソース、どっちが最終版か判断できないところがあるので確認して正しい状態にしてもらいたい。接続情報とかがさくらサーバーになってたりするのでカゴヤVPSに一本化して統一してほしい。
+AI: カゴヤVPS上の先行改修（check_notifications.phpのログローテーション）を統合し、Renderおよびさくらサーバーへの依存を完全に撤廃してカゴヤVPS単体で完結するプッシュ通知アーキテクチャへ移行しました。Nginxに/push/プロキシを追加し、PM2プロセス（72kou-push:3007）とPHP内部通信・同一オリジン通信を確立。各種設定ファイル、CSV画像パス、SFTP接続情報をカゴヤVPS環境に統一しました。
+編集したファイルパス:
+- .gitignore
+- .vscode/sftp.json
+- 24sekki.csv
+- 72kou.csv
+- check_notifications.php
+- config.php
+- design-document.md
+- js/config.js
+- push-server/.env
+- push-server/index.js
+- README.md
+- subscribe.php
+
+2026-08-30 07:18:00
+USER: iosでpwaで通知設定した。時間になっても通知来ない。
+AI: サーバーのタイムゾーンが既にJSTであるにもかかわらず+9時間のUTC補正が二重適用されていた問題と、/notifyエンドポイントが検証のみでwebpush送信を実行していなかった問題を解消しました。常に正確な日本時間を取得するロジックへの改修、/notifyでの実送信処理の実装、重複配信防止およびservice-worker.jsへのnotificationclickハンドラ追加を行い、Apple Push Notification service（APNs）への正常疎通（HTTP 201 Created）を確認しました。
+編集したファイルパス:
+- check_notifications.php
+- push-server/index.js
+- service-worker.js
+

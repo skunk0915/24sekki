@@ -99,15 +99,13 @@
 - `VAPID_PRIVATE_KEY`: Web Push用秘密鍵
 - `SUBSCRIPTIONS_URL`: 購読情報のURL
 
-## 6. デプロイメント
-
-### 6.1 フロントエンド
-- PHPが動作するWebサーバー（さくらサーバーなど）にデプロイ
-
-### 6.2 バックエンド
-- Node.jsが動作するサーバーにデプロイ
-- 環境変数の設定
-- PM2などでプロセス管理
+### 6.1 デプロイ環境（カゴヤVPS一本化）
+- **サーバー**: カゴヤVPS（Ubuntu 24.04 / Nginx / PHP 8.3-FPM）
+- **公開URL**: `https://72kou.133.18.144.38.sslip.io/`
+- **Webルート**: `/var/www/72kou`
+- **プッシュ通知サーバー**: PM2プロセス `72kou-push`（ポート 3007）
+  - Nginxリバースプロキシ: `location /push/` -> `http://127.0.0.1:3007/`
+  - cron定期実行: `*/5 * * * * php /var/www/72kou/check_notifications.php`
 
 ## 7. 今後の拡張可能性
 

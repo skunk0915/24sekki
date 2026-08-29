@@ -1,2 +1,10 @@
 subscriptions.txt
 subscribe_debug.log
+notification_log.txt
+*.log
+.env
+.env.*
+push-server/.env
+.vscode/sftp.json
+node_modules/
+.DS_Store
