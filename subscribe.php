@@ -144,15 +144,24 @@ if ($rawData) {
         exit;
     }
     
+    // 重複を確実に排除して書き込み
+    $uniqueSubscriptions = [];
+    foreach ($subscriptions as $sub) {
+        $key = $sub['endpoint'] ?? ($sub['browserId'] ?? null);
+        if ($key) {
+            $uniqueSubscriptions[$key] = $sub;
+        }
+    }
+
     // 書き込み
     $fp = fopen($subscriptionsFile, 'w');
     if ($fp) {
-        foreach ($subscriptions as $subscription) {
+        foreach ($uniqueSubscriptions as $subscription) {
             fwrite($fp, json_encode($subscription) . "\n");
         }
         fclose($fp);
         
-        logDebug("購読情報を正常に保存しました");
+        logDebug("購読情報を正常に保存しました (件数: " . count($uniqueSubscriptions) . ")");
         http_response_code(201);
         echo json_encode(["status" => "ok"]);
     } else {

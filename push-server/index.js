@@ -3,9 +3,9 @@ const fetch = require('node-fetch');
 const webpush = require('web-push');
 const cors = require('cors');
 const cron = require('node-cron');
-require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const config = require('./config.json');
 
 // Expressアプリの初期化
@@ -69,18 +69,19 @@ async function getSubscriptionsText() {
   return '';
 }
 
-// 重複送信防止キャッシュ（2分以内・同一時刻の重複配信を防止）
+// 重複送信防止キャッシュ（10分以内・同一日の同一時刻の重複配信を防止）
 const recentPushMap = new Map();
 function isDuplicateSend(endpoint, timeKey) {
-  const key = `${endpoint}_${timeKey}`;
+  const { todayMD } = getJSTInfo();
+  const key = `${endpoint}_${todayMD}_${timeKey}`;
   const now = Date.now();
-  if (recentPushMap.has(key) && (now - recentPushMap.get(key) < 120000)) {
+  if (recentPushMap.has(key) && (now - recentPushMap.get(key) < 600000)) {
     return true;
   }
   recentPushMap.set(key, now);
-  if (recentPushMap.size > 200) {
+  if (recentPushMap.size > 500) {
     for (const [k, v] of recentPushMap.entries()) {
-      if (now - v > 300000) recentPushMap.delete(k);
+      if (now - v > 86400000) recentPushMap.delete(k);
     }
   }
   return false;
@@ -212,20 +213,105 @@ function loadKouData() {
   }
 }
 
-// 暦情報を取得する関数
+// 二十四節気データをCSVから読み込む関数
+function loadSekkiData() {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+
+    const candidatePaths = [
+      path.join(__dirname, '../24sekki.csv'),
+      path.join(__dirname, '../../24sekki.csv'),
+      path.join(process.cwd(), '24sekki.csv')
+    ];
+
+    const csvPath = candidatePaths.find(p => fs.existsSync(p));
+    if (!csvPath) {
+      console.error('[scheduler] 24sekki.csv が見つかりません');
+      return null;
+    }
+
+    const fileContent = fs.readFileSync(csvPath, 'utf8');
+    const lines = fileContent.replace(/\r\n?/g, '\n').split('\n').filter(l => l.trim().length > 0);
+    if (lines.length <= 1) return null;
+
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^\ufeff/, ''));
+    const results = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+      const entry = {};
+      headers.forEach((h, idx) => {
+        entry[h] = cols[idx] || '';
+      });
+      results.push(entry);
+    }
+
+    return results;
+  } catch (error) {
+    console.error('[scheduler] 24sekki.csv の読み込みエラー:', error);
+    return null;
+  }
+}
+
+// 暦情報を取得する関数（ローカルCSV優先）
 async function getCurrentSekki() {
+  try {
+    const { jstDate } = getJSTInfo();
+    const sekkiList = loadSekkiData();
+
+    if (sekkiList && sekkiList.length > 0) {
+      for (let i = 0; i < sekkiList.length; i++) {
+        const sekki = sekkiList[i];
+        if (!sekki['開始年月日'] || !sekki['終了年月日']) continue;
+
+        const startParts = sekki['開始年月日'].trim().split(/[\/\-]/);
+        const endParts = sekki['終了年月日'].trim().split(/[\/\-]/);
+        if (startParts.length !== 2 || endParts.length !== 2) continue;
+
+        const startMonth = parseInt(startParts[0], 10) - 1;
+        const startDay = parseInt(startParts[1], 10);
+        const endMonth = parseInt(endParts[0], 10) - 1;
+        const endDay = parseInt(endParts[1], 10);
+
+        let startDate = new Date(Date.UTC(jstDate.getUTCFullYear(), startMonth, startDay));
+        let endDate = new Date(Date.UTC(jstDate.getUTCFullYear(), endMonth, endDay));
+
+        if (endDate < startDate) {
+          if (jstDate.getUTCMonth() >= startMonth) {
+            endDate = new Date(Date.UTC(jstDate.getUTCFullYear() + 1, endMonth, endDay));
+          } else {
+            startDate = new Date(Date.UTC(jstDate.getUTCFullYear() - 1, startMonth, startDay));
+          }
+        }
+
+        if (jstDate >= startDate && jstDate <= endDate) {
+          return {
+            id: i + 1,
+            name: sekki['節気名'],
+            reading: sekki['読み'] || sekki['節気名'],
+            start_date: sekki['開始年月日'],
+            end_date: sekki['終了年月日'],
+            kou_name: sekki['候名'] || ''
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[getCurrentSekki] ローカル判定エラー:', err);
+  }
+
+  // フォールバック（API経由）
   try {
     const apiBaseUrl = process.env.API_BASE_URL || 'https://72kou.133.18.144.38.sslip.io/api';
     const response = await fetch(`${apiBaseUrl}/current-sekki.php`);
-    if (!response.ok) {
-      throw new Error(`API応答エラー: ${response.status}`);
+    if (response.ok) {
+      return await response.json();
     }
-    const data = await response.json();
-    return data;
   } catch (error) {
-    console.error('暦情報の取得に失敗しました:', error);
-    return null;
+    console.error('API経由の暦情報の取得に失敗しました:', error.message);
   }
+  return null;
 }
 
 // 購読者全員に通知を送信する関数
@@ -717,13 +803,12 @@ app.get('/test', (req, res) => {
   });
 });
 
-// サーバー起動用エンドポイント（通知の5分前に呼び出される）
+// サーバー起動用エンドポイント
 app.get('/wake', (req, res) => {
-  console.log('サーバー起動リクエストを受信しました:', new Date().toLocaleString());
-  sendScheduledNotifications();
+  console.log('サーバー稼働確認リクエストを受信しました:', new Date().toLocaleString());
   res.json({
     status: 'ok',
-    message: 'サーバーが起動しました',
+    message: 'サーバーが正常に動作しています',
     timestamp: new Date().toISOString()
   });
 });
@@ -740,6 +825,18 @@ app.post('/notify', async (req, res) => {
 
     if (!isValidSubscription(subscription)) {
       return res.status(400).json({ error: '無効な購読情報です' });
+    }
+
+    const { currentTime } = getJSTInfo();
+    const timeKey = subscription.notifyTime || currentTime;
+
+    // 重複送信防止（同一端末・同一時刻への重複送信を防止）
+    if (isDuplicateSend(subscription.endpoint, timeKey)) {
+      console.log(`[notify] 重複送信スキップ: ${subscription.endpoint.substring(0, 30)}...`);
+      return res.status(200).json({
+        success: true,
+        message: '既に送信済みのためスキップしました (重複防止)'
+      });
     }
 
     const payload = JSON.stringify({

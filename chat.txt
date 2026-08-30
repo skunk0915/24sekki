@@ -35,3 +35,10 @@ AI: サーバーのタイムゾーンが既にJSTであるにもかかわらず+
 - push-server/index.js
 - service-worker.js
 
+2026-08-31 07:48:00
+USER: 通知来るようになったけど２回連続でくる
+AI: 二重通知の原因となっていた「push-server（Node.js常駐プロセス）の毎分スケジューラ」と「crontabのcheck_notifications.php（5分毎実行）」の重複起動を解消しました。通知スケジューラを常駐プロセス（72kou-push）に一本化し、crontabのcheck_notifications.phpを停止。さらにpush-server内の/notifyエンドポイントおよびスケジューラに同一端末・同一日時の重複送信防止ガード（10分間抑止）を追加し、subscribe.phpで購読情報の保存時に同一エンドポイントが重複登録されないようクリーンアップ処理を導入しました。
+編集したファイルパス:
+- push-server/index.js
+- subscribe.php
+
