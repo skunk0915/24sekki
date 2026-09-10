@@ -1,15 +1,12 @@
 <?php
 // 共通関数を読み込み
 require_once 'functions.php';
-// スプレッドシートからデータを取得する関数を読み込み
-require_once 'get_spreadsheet_data.php';
 
 $kou_list = load_kou_data('72kou.csv');
 $sekki_list = load_sekki_data('24sekki.csv');
 
-// スプレッドシートからコラム解説データを取得
-$spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1XwNR5IxzWG3Z2AGUnifdjWZk1LWQWVnpfzNzEoPxSzw/edit?usp=sharing';
-$column_data = get_spreadsheet_data($spreadsheet_url);
+// 季節のことばデータを読み込み
+$column_data = load_seasonal_words_data('seasonal_words.csv');
 
 // GETパラメータでタイプとidxが指定されていれば、その候または節気を表示
 // 指定がなければ今日の候を優先表示
@@ -115,7 +112,6 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/column-style.css">
     <!-- PWA対応 -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="transparent">

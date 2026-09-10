@@ -16,8 +16,8 @@ date_default_timezone_set('Asia/Tokyo');
 function load_kou_data($csv_file) {
     $kou_list = array();
     if (($handle = fopen($csv_file, "r")) !== FALSE) {
-        $header = fgetcsv($handle);
-        while (($row = fgetcsv($handle)) !== FALSE) {
+        $header = fgetcsv($handle, 0, ",", "\"", "\\");
+        while (($row = fgetcsv($handle, 0, ",", "\"", "\\")) !== FALSE) {
             $kou = array();
             foreach ($header as $i => $col) {
                 $kou[$col] = isset($row[$i]) ? $row[$i] : '';
@@ -38,8 +38,8 @@ function load_kou_data($csv_file) {
 function load_sekki_data($csv_file) {
     $sekki_list = array();
     if (($handle = fopen($csv_file, "r")) !== FALSE) {
-        $header = fgetcsv($handle);
-        while (($row = fgetcsv($handle)) !== FALSE) {
+        $header = fgetcsv($handle, 0, ",", "\"", "\\");
+        while (($row = fgetcsv($handle, 0, ",", "\"", "\\")) !== FALSE) {
             $sekki = array();
             foreach ($header as $i => $col) {
                 $sekki[$col] = isset($row[$i]) ? $row[$i] : '';
@@ -49,6 +49,28 @@ function load_sekki_data($csv_file) {
         fclose($handle);
     }
     return $sekki_list;
+}
+
+/**
+ * seasonal_words.csvを読み込んで季節のことばリストを取得
+ * 
+ * @param string $csv_file CSVファイルのパス
+ * @return array 季節のことばリスト
+ */
+function load_seasonal_words_data($csv_file) {
+    $words_list = array();
+    if (file_exists($csv_file) && ($handle = fopen($csv_file, "r")) !== FALSE) {
+        $header = fgetcsv($handle, 0, ",", "\"", "\\");
+        while (($row = fgetcsv($handle, 0, ",", "\"", "\\")) !== FALSE) {
+            $item = array();
+            foreach ($header as $i => $col) {
+                $item[$col] = isset($row[$i]) ? $row[$i] : '';
+            }
+            $words_list[] = $item;
+        }
+        fclose($handle);
+    }
+    return $words_list;
 }
 
 /**
