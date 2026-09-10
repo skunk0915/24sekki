@@ -315,9 +315,9 @@ async function getCurrentSekki() {
 }
 
 // 購読者全員に通知を送信する関数
-async function sendNotificationToAll(title, body) {
+async function sendNotificationToAll(title, body, targetUrl = '/index.php') {
   try {
-    console.log(`通知を送信します: ${title} - ${body}`);
+    console.log(`通知を送信します: ${title} - ${body} (URL: ${targetUrl})`);
     const txt = await getSubscriptionsText();
 
     if (!txt || txt.trim() === '') {
@@ -333,7 +333,7 @@ async function sendNotificationToAll(title, body) {
       body: body || '',
       icon: '/img/favicon/icon-192.png',
       badge: '/img/favicon/favicon-32.png',
-      data: { url: '/' }
+      data: { url: targetUrl }
     });
 
     let successCount = 0;
@@ -717,16 +717,28 @@ async function sendScheduledNotifications() {
 
       targets++;
 
-      // 通知内容を決定
+      // 通知内容と遷移先URLを決定
       let notifyTitle = currentSekki.name;
       let notifyBody = `${currentSekki.name}：${(currentKou ? (currentKou['和名'] || currentKou['候名']) : currentSekki.kou_name) || ''}`;
+      let targetUrl = '/index.php';
+
+      if (isSekkiDay && currentSekki && currentSekki.id) {
+        // 二十四節気の開始日の場合は二十四節気のページを開く
+        targetUrl = `/index.php?type=sekki&idx=${currentSekki.id - 1}`;
+      } else if (currentKou && kouList) {
+        // 七十二候のページを開く
+        const kouIdx = kouList.indexOf(currentKou);
+        if (kouIdx !== -1) {
+          targetUrl = `/index.php?type=kou&idx=${kouIdx}`;
+        }
+      }
 
       const payload = JSON.stringify({
         title: notifyTitle,
         body: notifyBody,
         icon: '/img/favicon/icon-192.png',
         badge: '/img/favicon/favicon-32.png',
-        data: { url: '/' }
+        data: { url: targetUrl }
       });
 
       try {
@@ -766,8 +778,9 @@ cron.schedule('0 0 * * *', async () => {
 
       const title = currentSekki.name;
       const body = `${currentSekki.name}：${currentSekki.kou_name || ''}`;
+      const targetUrl = `/index.php?type=sekki&idx=${currentSekki.id - 1}`;
 
-      const result = await sendNotificationToAll(title, body);
+      const result = await sendNotificationToAll(title, body, targetUrl);
       console.log(`通知結果: 成功=${result.success}, 失敗=${result.failed}`);
     } else {
       console.log(`暦は変わっていません: ${currentSekki.name}`);
@@ -839,12 +852,17 @@ app.post('/notify', async (req, res) => {
       });
     }
 
+    const notificationData = Object.assign({ url: '/index.php' }, data || {});
+    if (!notificationData.url) {
+      notificationData.url = '/index.php';
+    }
+
     const payload = JSON.stringify({
       title: title || '二十四節気・七十二候',
       body: body || '暦が変わりました',
       icon: icon || '/img/favicon/icon-192.png',
       badge: badge || '/img/favicon/favicon-32.png',
-      data: data || { url: '/' }
+      data: notificationData
     });
 
     console.log(`プッシュ通知を送信します: ${payload}`);

@@ -309,6 +309,7 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                         }) // スコープを明示的に指定
                         .then(function(registration) {
                             console.log('ServiceWorker登録成功: ', registration.scope);
+                            registration.update(); // サービスワーカーの更新をチェック
                         })
                         .catch(function(error) {
                             console.log('ServiceWorker登録失敗: ', error);
@@ -316,11 +317,31 @@ if (isset($_GET['type']) && isset($_GET['idx'])) {
                 });
             }
 
-            // PWAインストールバナーの表示をデバッグ
-            window.addEventListener('beforeinstallprompt', (e) => {
-                console.log('beforeinstallpromptイベントが発生しました');
-                // イベントを保存しておく
-                window.deferredPrompt = e;
+            // サービスワーカーからの画面遷移メッセージを受信
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', function(event) {
+                    if (event.data && event.data.type === 'NAVIGATE' && event.data.url) {
+                        window.location.href = event.data.url;
+                    }
+                });
+            }
+
+            // バックグラウンドからの復帰時に日付が変更されていれば最新の暦を表示
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (!urlParams.has('type') && !urlParams.has('idx')) {
+                        const pageDate = '<?php echo date('Y-m-d'); ?>';
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const month = String(now.getMonth() + 1).padStart(2, '0');
+                        const day = String(now.getDate()).padStart(2, '0');
+                        const todayStr = `${year}-${month}-${day}`;
+                        if (pageDate !== todayStr) {
+                            window.location.reload();
+                        }
+                    }
+                }
             });
         </script>
         

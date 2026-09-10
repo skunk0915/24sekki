@@ -1,11 +1,11 @@
-const CACHE_NAME = 'koyomi-cache-v12'; // バージョン更新
+const CACHE_NAME = 'koyomi-cache-v13'; // バージョン更新
 const urlsToCache = [
-  './',
-  './index.php',
-  './calendar.php',
-  './functions.php',
   './css/style.css',
+  './css/column-style.css',
   './js/scripts.js',
+  './js/horizon-scroll.js',
+  './js/config.js',
+  './js/app.js',
   './manifest.json',
   './img/favicon/favicon-16.png',
   './img/favicon/favicon-32.png',
@@ -16,27 +16,23 @@ const urlsToCache = [
   './img/favicon/favicon.ico'
 ];
 
-// インストール時にキャッシュを設定
+// インストール時に静的アセットをキャッシュ
 self.addEventListener('install', function(event) {
   console.log('サービスワーカーをインストール中...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(function(cache) {
         console.log('キャッシュを開きました: ' + CACHE_NAME);
-        
-        // 個別にキャッシュを試み、一部が失敗しても全体が失敗しないようにする
         return Promise.all(
           urlsToCache.map(function(url) {
             return cache.add(url).catch(function(error) {
               console.log('キャッシュ失敗: ' + url + ' - ' + error.message);
-              // エラーを食い止めて続行する
               return Promise.resolve();
             });
           })
         );
       })
       .then(function() {
-        // インストール完了時にアクティベートを強制する
         return self.skipWaiting();
       })
   );
@@ -44,117 +40,47 @@ self.addEventListener('install', function(event) {
 
 // ネットワークリクエストの傍受
 self.addEventListener('fetch', function(event) {
-  // PHPファイルへのリクエストは常に最新を取得（キャッシュを使わない）
-  if (event.request.url.match(/\.php(\?.*)?$/) || event.request.url.includes('/api/')) {
-    console.log('PHPまたはAPIリクエスト - ネットワーク優先: ' + event.request.url);
-    event.respondWith(
-      fetch(event.request)
-        .then(function(response) {
-          return response;
-        })
-        .catch(function() {
-          // オフライン時のフォールバック
-          return caches.match(event.request);
-        })
-    );
+  const url = new URL(event.request.url);
+  const isNavigate = event.request.mode === 'navigate';
+  const isPhp = url.pathname.endsWith('.php') || url.pathname.includes('.php');
+  const isApi = url.pathname.includes('/api/');
+  const isRoot = url.pathname === '/' || url.pathname.endsWith('/');
+
+  // HTMLページ・PHP・APIへのリクエストは常にネットワークから最新を取得
+  if (isNavigate || isPhp || isApi || isRoot) {
+    event.respondWith(fetch(event.request));
     return;
   }
-  
-  // その他のリクエストはキャッシュファースト戦略
+
+  // 静的アセットはキャッシュ優先
   event.respondWith(
-    caches.match(event.request)
-      .then(function(response) {
-        // キャッシュ内に一致するレスポンスがあればそれを返す
-        if (response) {
-          return response;
-        }
-        
-        // キャッシュにない場合はネットワークから取得
-        return fetch(event.request).then(
-          function(response) {
-            // 有効なレスポンスかチェック
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            try {
-              // レスポンスを複製（レスポンスは一度しか使用できないため）
-              var responseToCache = response.clone();
-
-              caches.open(CACHE_NAME)
-                .then(function(cache) {
-                  try {
-                    cache.put(event.request, responseToCache);
-                  } catch (cacheError) {
-                    console.error('キャッシュ保存エラー:', cacheError);
-                  }
-                });
-            } catch (cloneError) {
-              console.error('レスポンス複製エラー:', cloneError);
-            }
-
-            return response;
-          }
-        );
-      })
-      .catch(function(error) {
-        console.log('フェッチエラー:', error);
-        // オフライン時のフォールバック処理をここに追加できます
-      })
-    );
-});
-
-// 古いキャッシュの削除
-self.addEventListener('activate', function(event) {
-});
-
-// --- ここからWeb Push通知対応 ---
-self.addEventListener('push', function (event) {
-  let data = {};
-  try {
-    data = event.data.json();
-  } catch (e) {
-    data = { title: '二十四節気・七十二候', body: '暦が変わりました' };
-  }
-  
-  const title = data.title || '二十四節気・七十二候';
-  const options = {
-    body: data.body || '',
-    icon: data.icon || './img/favicon/icon-192.png',
-    badge: data.badge || './img/favicon/favicon-32.png',
-    data: data.data || { url: './' }
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
-});
-
-// 通知クリック時のイベント
-self.addEventListener('notificationclick', function(event) {
-  event.notification.close();
-  const urlToOpen = (event.notification.data && event.notification.data.url) ? event.notification.data.url : './';
-  
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-      for (let i = 0; i < clientList.length; i++) {
-        let client = clientList[i];
-        if (client.url && 'focus' in client) {
-          return client.focus();
-        }
+    caches.match(event.request).then(function(response) {
+      if (response) {
+        return response;
       }
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
+      return fetch(event.request).then(function(networkResponse) {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          return networkResponse;
+        }
+        try {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, responseToCache);
+          });
+        } catch (e) {
+          console.error('キャッシュ保存エラー:', e);
+        }
+        return networkResponse;
+      });
     })
   );
 });
-// --- ここまでWeb Push通知対応 ---
 
+// 古いキャッシュの削除とアクティベート
 self.addEventListener('activate', function(event) {
   console.log('サービスワーカーをアクティベート中...');
-  var cacheWhitelist = [CACHE_NAME];
-  
+  const cacheWhitelist = [CACHE_NAME];
+
   event.waitUntil(
     caches.keys()
       .then(function(cacheNames) {
@@ -168,9 +94,59 @@ self.addEventListener('activate', function(event) {
         );
       })
       .then(function() {
-        // 新しいサービスワーカーをすべてのクライアントで即時有効化
         console.log('新しいサービスワーカーがすべてのクライアントを制御します');
         return self.clients.claim();
       })
   );
 });
+
+// --- ここからWeb Push通知対応 ---
+self.addEventListener('push', function(event) {
+  let data = {};
+  try {
+    data = event.data.json();
+  } catch (e) {
+    data = { title: '二十四節気・七十二候', body: '暦が変わりました' };
+  }
+
+  const title = data.title || '二十四節気・七十二候';
+  const options = {
+    body: data.body || '',
+    icon: data.icon || './img/favicon/icon-192.png',
+    badge: data.badge || './img/favicon/favicon-32.png',
+    data: data.data || { url: './index.php' }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// 通知クリック時のイベント（そのときの暦のページを開く）
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const rawUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : './index.php';
+  const urlToOpen = new URL(rawUrl, self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (let i = 0; i < clientList.length; i++) {
+        let client = clientList[i];
+        if ('focus' in client) {
+          return client.focus().then(function(focusedClient) {
+            const targetClient = focusedClient || client;
+            if (targetClient && 'navigate' in targetClient) {
+              return targetClient.navigate(urlToOpen);
+            } else if (targetClient && 'postMessage' in targetClient) {
+              targetClient.postMessage({ type: 'NAVIGATE', url: urlToOpen });
+            }
+          });
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+// --- ここまでWeb Push通知対応 ---

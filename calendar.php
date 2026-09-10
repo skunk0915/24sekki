@@ -189,6 +189,7 @@ $from_idx = isset($_GET['idx']) ? (int)$_GET['idx'] : -1;
                     }) // スコープを明示的に指定
                     .then(function(registration) {
                         console.log('ServiceWorker登録成功: ', registration.scope);
+                        registration.update(); // サービスワーカーの更新をチェック
                     })
                     .catch(function(error) {
                         console.log('ServiceWorker登録失敗: ', error);

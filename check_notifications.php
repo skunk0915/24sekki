@@ -267,10 +267,28 @@ foreach ($subscriptions as $subscription) {
         logMessage("通知を送信します。");
 
         // 節気情報を取得
+        $targetUrl = '/index.php';
         if ($isSekkiChangeDay && isset($sekkiData[$today])) {
             $sekkiInfo = $sekkiData[$today];
             $title = "{$sekkiInfo['type']}「{$sekkiInfo['name']}」";
             $body = "本日から{$sekkiInfo['name']}（{$sekkiInfo['reading']}）です。";
+            if ($sekkiInfo['type'] === '二十四節気') {
+                $sekki_list = load_sekki_data(__DIR__ . '/24sekki.csv');
+                foreach ($sekki_list as $i => $s) {
+                    if (($s['節気名'] ?? '') === $sekkiInfo['name']) {
+                        $targetUrl = "/index.php?type=sekki&idx={$i}";
+                        break;
+                    }
+                }
+            } else {
+                $kou_list = load_kou_data(__DIR__ . '/72kou.csv');
+                foreach ($kou_list as $i => $k) {
+                    if (($k['和名'] ?? '') === $sekkiInfo['name']) {
+                        $targetUrl = "/index.php?type=kou&idx={$i}";
+                        break;
+                    }
+                }
+            }
         } else {
             // 節気変更日でない場合（毎日通知の場合）
             $kou_list = load_kou_data(__DIR__ . '/72kou.csv');
@@ -280,6 +298,10 @@ foreach ($subscriptions as $subscription) {
             $title = $today_sekki['節気名'] ?? '本日の暦';
             $kouName = $today_kou['和名'] ?? $today_kou['候名'] ?? '';
             $body = ($today_sekki['節気名'] ?? '') . ($kouName ? '：' . $kouName : '');
+            $kouIdx = array_search($today_kou, $kou_list);
+            if ($kouIdx !== false) {
+                $targetUrl = "/index.php?type=kou&idx={$kouIdx}";
+            }
         }
 
         // 擬似的な購読情報の場合は通知を送信しない
@@ -300,6 +322,9 @@ foreach ($subscriptions as $subscription) {
         $postData = json_encode([
             'title' => $title,
             'body' => $body,
+            'data' => [
+                'url' => $targetUrl
+            ],
             'subscription' => $subscription
         ]);
 
